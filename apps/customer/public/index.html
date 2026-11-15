@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Manankuragayalu</title><link rel="stylesheet" href="/style.css"></head>
+<body>
+<header><strong>Manankuragayalu</strong><nav hidden aria-label="Shop navigation"><a href="#home">Home</a><a href="#categories">Categories</a><a href="#cart">Cart <span id="cart-count"></span></a><a href="#orders">Orders</a><a href="#profile">Profile</a></nav></header>
+<main>
+<output id="notice" aria-live="polite"></output>
+<section data-page="home" hidden><div class="hero"><p class="badge">Bowenpally delivery · under 20 km</p><h1>Fresh vegetables & everyday essentials</h1><a href="#delivery">Check delivery</a></div><h2>Shop all products</h2><p id="catalog-mode" hidden>Demo catalog · sample prices and stock</p><div id="products" class="grid"></div></section>
+<section data-page="delivery" hidden><h1>Check delivery</h1><p>We deliver to addresses less than 20 km from our dispatch location.</p>
+<form id="delivery-preview" class="panel"><input type="hidden" name="lat"><input type="hidden" name="lon">
+<div class="actions"><button type="button" id="preview-locate">Use my current location</button></div><p id="preview-status" role="status"></p><a href="#home">Back to shopping</a></form></section>
+<section data-page="categories" hidden><h1>Categories</h1><div id="category-filter" class="actions"></div><h2 id="category-title">Browse by category</h2><div id="category-products" class="grid"></div></section>
+<section data-page="cart" hidden><h1>Your cart</h1><p id="receipt" aria-live="polite"></p><div id="cart"></div><a id="browse" href="#home">Browse products</a><form class="panel" id="checkout" hidden>
+<h2>Delivery & checkout</h2><label>Delivery address<textarea name="address" required maxlength="300"></textarea></label><label>Phone<input name="phone" type="tel" required></label>
+<input type="hidden" name="lat"><input type="hidden" name="lon">
+<button type="button" id="use-saved">Use saved address</button> <button type="button" id="locate">Use my current location</button><p id="delivery-status" aria-live="polite"></p>
+<label>Delivery slot<select name="slot" id="slots" required></select></label><label><input name="consent" type="checkbox"> Send order updates on WhatsApp when available</label><p>Payment on delivery</p><button id="place-order">Place order</button><button id="checkout-signin" type="button" hidden>Sign in to checkout</button></form></section>
+<section data-page="orders" hidden><h1>My orders</h1><div id="history" aria-live="polite"></div><button id="more-orders" hidden>Load more orders</button></section>
+<section data-page="profile" hidden><h1>My profile</h1><p id="account"></p>
+<button id="logout" type="button" hidden>Log out</button>
+<button id="profile-signin" type="button" hidden>Sign in or create an account</button>
+<form id="profile-form" class="panel" hidden><h2>Personal details</h2><label>Full name<input name="name" maxlength="100" autocomplete="name" required></label><label>Phone<input name="phone" type="tel" autocomplete="tel"></label><label>Default delivery address<textarea name="address" maxlength="300" autocomplete="street-address"></textarea></label><input type="hidden" name="lat"><input type="hidden" name="lon"><button type="button" id="profile-locate">Use my current location</button> <button>Save profile</button><p id="profile-location-status" role="status"></p></form>
+<details class="panel" id="support"><summary>Support</summary><p>Check delivery availability from Cart. For an existing booking, open Orders to find its reference and status.</p></details></section>
+<section data-page="welcome" hidden><div class="welcome-card panel">
+<p class="badge">Fresh vegetables &amp; everyday essentials</p>
+<h1 id="auth-title">Sign in</h1>
+<p id="auth-description">Enter your email to receive a one-time sign-in code.</p>
+<form id="send"><label>Email address<input name="email" type="email" required autocomplete="email"></label><button>Send sign-in code</button></form>
+<form id="verify" hidden><label>Six-digit code<input name="code" required pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code"></label><button>Verify and continue</button></form>
+<p id="login-status" role="status"></p><p id="auth-alternative">New to Manankuragayalu? <a href="#signup">Create an account</a></p>
+<a id="auth-back" href="#home">Back to shopping</a>
+</div></section>
+</main>
+<a id="cart-bar" class="cart-bar" href="#cart" hidden>
+  <span aria-hidden="true">🛒</span>
+  <span id="cart-bar-count" aria-live="polite"></span>
+  <strong>View cart</strong>
+</a>
+<script type="module" src="/app.mjs"></script></body></html>
+
+
+

@@ -1,0 +1,2 @@
+ALTER TABLE products ADD COLUMN tags TEXT NOT NULL DEFAULT '[]';
+ALTER TABLE products ADD COLUMN original_price INTEGER;

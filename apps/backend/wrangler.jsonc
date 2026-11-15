@@ -1,0 +1,14 @@
+{
+  "name": "manankuragayalu-backend",
+  "main": "src/index.mjs",
+  "compatibility_date": "2026-11-14",
+  "workers_dev": false,
+  "preview_urls": false,
+  "vars": {
+    "BREVO_SENDER": "manaveg083@gmail.com",
+    "DISPATCH_MAP_URL": "https://goo.gl/maps/Fu9qJPyhiq6taQaA9?g_st=aw"
+  },
+  "d1_databases": [{"binding":"DB","database_name":"manankuragayalu","database_id":"REPLACE_WITH_D1_ID"}],
+  "r2_buckets": [{"binding":"PHOTOS","bucket_name":"manankuragayalu-photos"}],
+  "triggers": {"crons":["*/5 * * * *"]}
+}

@@ -1,0 +1,38 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Store admin | Manankuragayalu</title><link rel="stylesheet" href="/style.css"><body><header><strong>Manankuragayalu</strong><nav aria-label="Main navigation"><a href="#home">Home</a><a href="#catalog">Catalog</a><a href="#bookings">Bookings</a><a href="#profile">Profile</a></nav></header><main>
+<section id="home">
+  <h1 class="dashboard-title">Today's bookings</h1>
+  <p id="dashboard-sync" role="status"></p><dl class="dashboard-stats" aria-live="polite">
+    <div class="dashboard-stat"><dt>Total bookings</dt><dd id="stat-total">&mdash;</dd></div>
+    <div class="dashboard-stat"><dt>Pending</dt><dd id="stat-pending">&mdash;</dd></div>
+    <div class="dashboard-stat"><dt>Accepted</dt><dd id="stat-accepted">&mdash;</dd></div>
+    <div class="dashboard-stat"><dt>Delivered</dt><dd id="stat-delivered">&mdash;</dd></div>
+    <div class="dashboard-stat dashboard-revenue"><dt>Today's revenue</dt><dd id="stat-revenue">&mdash;</dd></div>
+  </dl>
+</section>
+<section id="catalog" class="panel"><h2>Vegetable catalog</h2><form id="publish"><div class="product-basics"><label class="upload-tile"><input name="photo" type="file" accept="image/jpeg,image/png,image/webp"><img id="upload-preview" alt="" hidden><span id="upload-caption">Upload product photo</span></label><div class="product-identity"><label>Name<input name="name" required maxlength="100"></label><div class="category-picker"><span id="category-label">Category</span><details id="category-picker"><summary id="category-current" aria-labelledby="category-label category-current">Vegetables</summary><div id="categories"></div></details><input type="hidden" name="category"></div></div></div><div class="category-picker"><span id="pricing-label">Pricing method</span><details id="pricing-picker"><summary id="pricing-current" aria-labelledby="pricing-label pricing-current">By kilogram</summary><div class="picker-options"><button type="button" data-pricing="weight">By kilogram</button><button type="button" data-pricing="fixed">Fixed pack</button></div></details><input type="hidden" name="pricing" value="weight"></div><label id="fixed-unit" hidden>Pack size<input name="unit" placeholder="6 eggs" maxlength="40"></label><label id="price-label"><span id="price-caption">Price per kg (₹)</span><input name="price" type="text" inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?|[.][0-9]{1,2}" required></label><p id="pack-prices" aria-live="polite"></p><label id="quarter-stock">250 g packs in stock<input name="stock250" type="text" inputmode="numeric" pattern="[0-9]{1,6}" value="0" required></label><label id="half-stock">500 g packs in stock<input name="stock500" type="text" inputmode="numeric" pattern="[0-9]{1,6}" value="0" required></label><label><span id="stock-label">1 kg packs in stock</span><input name="stock" type="text" inputmode="numeric" pattern="[0-9]{1,6}" required></label><fieldset><legend>Product tags</legend>
+<label class="toggle-row"><span>Regular</span><input type="checkbox" role="switch" name="tags" value="Regular"><span class="toggle-track" aria-hidden="true"></span><span class="toggle-state" aria-hidden="true"></span></label>
+<label class="toggle-row"><span>Today’s special</span><input type="checkbox" role="switch" name="tags" value="Today's special"><span class="toggle-track" aria-hidden="true"></span><span class="toggle-state" aria-hidden="true"></span></label>
+<label class="toggle-row"><span>Leafy vegetables</span><input type="checkbox" role="switch" name="tags" value="Leafy vegetables"><span class="toggle-track" aria-hidden="true"></span><span class="toggle-state" aria-hidden="true"></span></label>
+<label class="toggle-row"><span>Seasonal</span><input type="checkbox" role="switch" name="tags" value="Seasonal"><span class="toggle-track" aria-hidden="true"></span><span class="toggle-state" aria-hidden="true"></span></label>
+<label class="toggle-row"><span>Fruit</span><input type="checkbox" role="switch" name="tags" value="Fruit"><span class="toggle-track" aria-hidden="true"></span><span class="toggle-state" aria-hidden="true"></span></label>
+</fieldset>
+<label class="toggle-row"><span>Enable offer</span><input type="checkbox" role="switch" name="offer"><span class="toggle-track" aria-hidden="true"></span><span class="toggle-state" aria-hidden="true"></span></label>
+<label id="discount-field" hidden><span id="discount-caption">Discount off each kg (₹)</span><input name="discount" type="text" inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?|[.][0-9]{1,2}" disabled></label>
+<button>Publish vegetable</button></form><h3>Published vegetables</h3><p id="catalog-mode" hidden>Demo catalog · sample prices and stock</p><div class="grid" id="products"></div></section>
+<section id="bookings" class="panel"><h2>Bookings</h2><p id="booking-sync" role="status"></p><section><h3>Pending</h3><div id="pending-orders"></div></section><section><h3>Accepted</h3><div id="accepted-orders"></div></section><section><h3>Delivered</h3><div id="delivered-orders"></div></section><section><h3>Other bookings</h3><div id="orders"></div></section></section>
+<section id="profile" class="panel"><h2>Admin profile</h2><p id="account"></p></section>
+<output id="notice" aria-live="polite"></output></main><script type="module" src="/app.mjs"></script></body></html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+

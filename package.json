@@ -1,0 +1,12 @@
+{
+  "name": "manankuragayalu",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "dev": "node --env-file-if-exists=.env scripts/dev.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
