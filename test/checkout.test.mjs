@@ -78,8 +78,39 @@ test('customer profile fields are saved only for the signed-in account', async (
   assert.equal((await call(shopper,{...details,lat:91})).status,400);
   assert.equal((await call(shopper,{...details,email:'other@example.test'})).status,200);
   const { profile } = await (await call(shopper)).json();
-  assert.deepEqual(profile,{ email:'shopper@example.test',role:'customer',...details });
-  assert.deepEqual((await (await call(other)).json()).profile,{ email:'other@example.test',role:'customer' });
+  assert.deepEqual(profile,{ email:'shopper@example.test',role:'customer',username:null,...details });
+  assert.deepEqual((await (await call(other)).json()).profile,{ email:'other@example.test',role:'customer',username:null,name:null,phone:null,address:null,lat:null,lon:null });
+});
+
+test('admin email codes issue staff sessions only for provisioned admin accounts', async () => {
+  const DB=localDatabase();
+  const origin='https://admin.example.test';
+  let code;
+  const env={DB,OTP_SECRET:'test-secret',BREVO_API_KEY:'test',BREVO_SENDER:'test@example.test',
+    async sendLocalEmail(_url,options) {
+      code=JSON.parse(options.body).textContent.match(/\b\d{6}\b/)[0];
+      return new Response(null,{status:201});
+    }
+  };
+  const call=(path,data,cookie)=>backend.fetch(new Request(origin+'/api/'+path,{
+    method:data ? 'POST' : 'GET',
+    headers:{Origin:origin,Cookie:cookie?.split(';')[0] ?? ''},
+    body:data && JSON.stringify(data)
+  }),env);
+  const email='staff@example.test';
+  assert.equal((await call('auth/otp/request',{email:'shopper@example.test',mode:'admin'})).status,400);
+  assert.equal((await call('auth/otp/request',{email,mode:'login'})).status,400);
+  assert.equal(code,undefined);
+  assert.equal((await call('auth/otp/request',{email,mode:'admin'})).status,200);
+  const verified=await call('auth/otp/verify',{email,code,mode:'admin'});
+  assert.equal(verified.status,200);
+  const cookie=verified.headers.get('Set-Cookie');
+  assert.match(cookie,/Max-Age=604800$/);
+  assert.equal((await call('auth/otp/verify',{email,code,mode:'admin'})).status,401);
+  assert.equal((await (await call('profile',null,cookie)).json()).profile.role,'admin');
+  assert.equal((await call('admin/catalog',null,cookie)).status,200);
+  assert.equal((await call('auth/logout',{},cookie)).status,200);
+  assert.equal((await call('admin/catalog',null,cookie)).status,401);
 });
 
 test('email signup issues a persistent customer session and logout revokes it', async () => {
@@ -102,13 +133,13 @@ test('email signup issues a persistent customer session and logout revokes it', 
   assert.equal(unknownLogin.status,400);
   assert.match((await unknownLogin.json()).error,/Create an account/);
   assert.equal(code,undefined);
-  assert.equal((await call('auth/otp/request',{email,mode:'signup'})).status,200);
-  const verify = await call('auth/otp/verify',{email,code,mode:'signup'});
+  assert.equal((await call('auth/otp/request',{email,mode:'signup',username:'new_shopper'})).status,200);
+  const verify = await call('auth/otp/verify',{email,code,mode:'signup',username:'new_shopper'});
   assert.equal(verify.status,200);
   const cookie = verify.headers.get('Set-Cookie');
   assert.match(cookie,/Secure; HttpOnly; SameSite=Lax/);
   assert.equal((await DB.prepare('SELECT expires FROM sessions WHERE email=?').bind(email).first()).expires,-1);
-  assert.equal((await call('auth/otp/verify',{email,code,mode:'signup'})).status,401);
+  assert.equal((await call('auth/otp/verify',{email,code,mode:'signup',username:'new_shopper'})).status,401);
   const account = await call('profile',null,cookie);
   assert.equal((await account.json()).profile.email,email);
   assert.equal(account.headers.get('Set-Cookie'),cookie);
@@ -148,15 +179,78 @@ test('publishing ₹30 per kg creates all three priced variants and checkout cha
     assert.equal(photo.headers.get('content-type'),'image/jpeg');
     assert.deepEqual([...new Uint8Array(await photo.arrayBuffer())],[255,216,255,217]);
   }
-  assert.equal(variants.find(product=>product.unit==='500 g').price,1500);
+  assert.equal(variants.find(product=>product.unit==='500 g').price,2000);
   const kilo=variants.find(product=>product.unit==='1 kg');
   assert.equal(kilo.price,3000);
   assert.equal(kilo.original_price,4000);
-  assert.equal(variants.find(product=>product.unit==='250 g').price,750);
+  assert.equal(variants.find(product=>product.unit==='250 g').price,1000);
+  assert.ok(variants.filter(product=>product.unit!=='1 kg').every(product=>product.original_price===null));
   assert.equal(variants[0].pack_group,variants[1].pack_group);
   const response=await call('/api/orders',{method:'POST',headers:{Origin:origin,Cookie:customer.split(';')[0],'Idempotency-Key':'two-kilos'},
     body:JSON.stringify({lat:17.47,lon:78.48,address:'Test address',phone:'9999999999',slot:'local',items:[{id:kilo.id,quantity:2}],total:8000})});
   assert.equal(response.status,201);
   assert.equal((await response.json()).order.total,8000);
+  const editPath='/api/admin/catalog/'+id;
+  const editOptions={method:'PUT',headers:{Origin:origin,Cookie:admin.split(';')[0]},body:form};
+  form.set('previousStock',JSON.stringify(Object.fromEntries(variants.map(pack=>[pack.id,pack.stock]))));
+  form.set('name','Updated Carrot');
+  form.set('price','48');
+  form.delete('photo');
+  form.delete('offer');
+  form.set('stock','9');
+  assert.equal((await call(editPath,editOptions)).status,409);
+  form.set('stock','5');
+  assert.equal((await call(editPath,editOptions)).status,200);
+  const updated=(await (await call('/api/catalog')).json()).products.filter(pack=>pack.pack_group===id);
+  assert.deepEqual(updated.map(pack=>pack.id).sort(),variants.map(pack=>pack.id).sort());
+  assert.ok(updated.every(pack=>pack.name==='Updated Carrot' && pack.has_photo && pack.original_price===null));
+  assert.equal(updated.find(pack=>pack.id===kilo.id).price,4800);
+  assert.equal(updated.find(pack=>pack.id===kilo.id).stock,3);
 });
-
+test('admin targets a coupon by username and checkout reserves and releases its budget',async()=>{
+  const DB=localDatabase();
+  await DB.prepare('UPDATE users SET username=? WHERE email=?').bind('FreshShopper','shopper@example.test').run();
+  await DB.prepare("INSERT INTO users(email,role) VALUES (?,'customer')").bind('other@example.test').run();
+  const admin=await issueSession(DB,'staff@example.test','admin');
+  const shopper=await issueSession(DB,'shopper@example.test');
+  const other=await issueSession(DB,'other@example.test');
+  const origin='https://shop.example.test';
+  const call=(path,cookie,body,key)=>backend.fetch(new Request(origin+'/api/'+path,{
+    method:body ? 'POST' : 'GET', headers:{Origin:origin,Cookie:cookie.split(';')[0],...(key && {'Idempotency-Key':key})},
+    body:body && JSON.stringify(body)
+  }),{DB});
+  assert.equal((await call('admin/customers?q=fresh',shopper)).status,403);
+  const {customers}=await (await call('admin/customers?q=fresh',admin)).json();
+  assert.deepEqual(customers,[{email:'shopper@example.test',username:'FreshShopper'}]);
+  assert.equal((await call('admin/coupons',admin,{code:'FRESH10',discount:1000,budget:1000,
+    customers:customers.map(customer=>customer.email)})).status,201);
+  assert.equal((await call('admin/coupons',admin,{code:'FIRST10',discount:1000,budget:3000,
+    customers:null,firstTime:true})).status,201);
+  assert.equal((await call('coupons/quote',shopper,{code:'FIRST10',items:[{id:'tomato-1kg',quantity:1}]})).status,200);
+  const quote={code:'fresh10',items:[{id:'tomato-1kg',quantity:1}]};
+  assert.equal((await call('coupons/quote',other,quote)).status,409);
+  assert.deepEqual(await (await call('coupons/quote',shopper,quote)).json(),{code:'FRESH10',discount:1000});
+  const order={address:'Test address',phone:'9999999999',lat:17.47,lon:78.48,slot:'local',
+    items:[{id:'tomato-1kg',quantity:1}],coupon:'FRESH10',total:4000};
+  assert.equal((await call('orders',other,order,'other')).status,409);
+  const created=await call('orders',shopper,order,'first');
+  assert.equal(created.status,201);
+  assert.equal((await call('orders',shopper,{...order,coupon:'FIRST10'},'first-only')).status,409);
+  const {order:{id}}=await created.json();
+  assert.equal((await call('orders',shopper,order,'first')).status,200);
+  assert.equal((await call('orders',shopper,order,'second')).status,409);
+  assert.equal((await call('admin/orders/'+id+'/decision',admin,{action:'reject'})).status,200);
+  assert.equal((await call('coupons/quote',shopper,{code:'FIRST10',items:[{id:'tomato-1kg',quantity:1}]})).status,200);
+  assert.equal((await call('orders',shopper,order,'third')).status,201);
+  const setting=threshold=>backend.fetch(new Request(origin+'/api/admin/delivery-offer',{
+    method:'PUT',headers:{Origin:origin,Cookie:admin.split(';')[0]},body:JSON.stringify({threshold})
+  }),{DB});
+  assert.equal((await setting(3000)).status,200);
+  const regular={...order,coupon:undefined,total:5000};
+  assert.equal((await call('orders',shopper,regular,'at-threshold')).status,201);
+  assert.equal((await setting(2900)).status,200);
+  assert.equal((await call('orders',shopper,regular,'stale-fee')).status,409);
+  const free=await call('orders',shopper,{...regular,total:3000},'free-delivery');
+  assert.equal(free.status,201);
+  assert.equal((await free.json()).order.total,3000);
+});

@@ -1,4 +1,5 @@
 import { issueSession } from './sessions.mjs';
+export const validUsername = value => typeof value==='string' && /^[a-zA-Z0-9_]{3,24}$/.test(value);
 
 async function digest(secret, email, code) {
   const encoder = new TextEncoder();
@@ -7,14 +8,16 @@ async function digest(secret, email, code) {
   return Array.from(new Uint8Array(hash), x => x.toString(16).padStart(2,'0')).join('');
 }
 
-export async function customerAuth(request, env, path, reply) {
+export async function emailAuth(request, env, path, reply) {
   if (request.method !== 'POST') return reply({error:'Method not allowed'},405);
   if (request.headers.get('Origin') !== new URL(request.url).origin) return reply({error:'Invalid origin'},403);
   if (!env.BREVO_API_KEY || !env.BREVO_SENDER || !env.OTP_SECRET) return reply({error:'Email login unavailable'},503);
 
   const input = await request.json().catch(() => null);
   const mode = input?.mode;
-  if (mode !== 'login' && mode !== 'signup') return reply({error:'Choose sign in or create an account'},400);
+  const username=input?.username;
+  if(mode==='signup' && !validUsername(username)) return reply({error:'Use a username with 3-24 letters, digits or underscores',field:'username'},400);
+  if (!['login','signup','admin'].includes(mode)) return reply({error:'Choose sign in or create an account'},400);
   const email = typeof input?.email === 'string' ? input.email.trim().toLowerCase() : '';
   if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return reply({error:'Invalid email'},400);
   const db = env.DB;
@@ -28,19 +31,25 @@ export async function customerAuth(request, env, path, reply) {
     .bind(bucket,(hour+1)*3600000,issuing ? 12 : 60).first();
   if (!rate) return reply({error:'Try again later'},429);
   const account = await db.prepare('SELECT role FROM users WHERE email=?').bind(email).first();
-  const eligible = mode === 'login' ? account?.role === 'customer' : !account;
+  const role = mode === 'admin' ? 'admin' : 'customer';
+  const eligible = mode === 'signup' ? !account : account?.role === role;
   if (!eligible) {
     if (!issuing) return reply({error:'Invalid code for this option'},401);
+    if (mode === 'admin') return reply({error:'Use the email address assigned to your admin account.'},400);
     return mode === 'login'
       ? reply({ok:false,error:'No customer account can sign in with this email. Create an account or check the address.'},400)
       : reply({ok:false,error:'This email cannot be used to create an account. Try signing in or use another email.'},400);
   }
+  if(mode==='signup' && await db.prepare('SELECT 1 FROM users WHERE username=?').bind(username).first()) {
+    return reply({error:'That username is taken',field:'username'},409);
+  }
+  const purpose=mode==='signup' ? mode+':'+username : mode;
 
   if (issuing) {
     const random = new Uint32Array(1);
     do { crypto.getRandomValues(random); } while (random[0] >= 4294000000);
     const code = String(random[0] % 1000000).padStart(6,'0');
-    const hash = await digest(env.OTP_SECRET,email,mode+':'+code);
+    const hash = await digest(env.OTP_SECRET,email,purpose+':'+code);
     const row = await db.prepare(`INSERT INTO otp VALUES (?,?,?,0,?) ON CONFLICT(email)
       DO UPDATE SET digest=excluded.digest,expires=excluded.expires,attempts=0,sent=excluded.sent
       WHERE otp.sent<=? RETURNING email`).bind(email,hash,now+600000,now,now-60000).first();
@@ -58,7 +67,7 @@ export async function customerAuth(request, env, path, reply) {
 
   const code = input?.code;
   if (typeof code !== 'string' || !/^\d{6}$/.test(code)) return reply({error:'Enter the six-digit code'},400);
-  const hash = await digest(env.OTP_SECRET,email,mode+':'+code);
+  const hash = await digest(env.OTP_SECRET,email,purpose+':'+code);
   const row = await db.prepare('DELETE FROM otp WHERE email=? AND digest=? AND expires>? AND attempts<5 RETURNING email')
     .bind(email,hash,now).first();
   if (!row) {
@@ -66,9 +75,9 @@ export async function customerAuth(request, env, path, reply) {
     return reply({error:'Invalid or expired code'},401);
   }
   if (mode === 'signup') {
-    const created = await db.prepare("INSERT INTO users(email,role) VALUES (?,'customer') ON CONFLICT(email) DO NOTHING RETURNING email").bind(email).first();
-    if (!created) return reply({error:'Account already exists. Sign in instead.'},409);
+    const created = await db.prepare("INSERT INTO users(email,role,username) VALUES (?,'customer',?) ON CONFLICT DO NOTHING RETURNING email").bind(email,username).first();
+    if (!created) return reply({error:'Email or username is already in use'},409);
   }
-  const cookie = await issueSession(db,email);
+  const cookie = await issueSession(db,email,role);
   return cookie ? reply({ok:true},200,{'Set-Cookie':cookie}) : reply({error:'Invalid code'},401);
 }

@@ -1,5 +1,5 @@
-<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Store admin | Manankuragayalu</title><link rel="stylesheet" href="/style.css"><body><header><strong>Manankuragayalu</strong><nav aria-label="Main navigation"><a href="#home">Home</a><a href="#catalog">Catalog</a><a href="#bookings">Bookings</a><a href="#profile">Profile</a></nav></header><main>
-<section id="home">
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Store admin | Manankuragayalu</title><link rel="stylesheet" href="/style.css"><body><header><strong>Manankuragayalu</strong><nav hidden aria-label="Main navigation"><a href="#home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10l9-7 9 7v10H3z M9 20v-6h6v6"/></svg>Home</a><a href="#catalog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"/></svg>Catalog</a><a href="#bookings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z M9 8h6 M9 12h6"/></svg>Bookings</a><a href="#offers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h8l10 10-7 7L4 11z M8 8h.01"/></svg>Offers</a><a href="#profile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a5 5 0 0 0-5-5H9a5 5 0 0 0-5 5v2 M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0"/></svg>Profile</a></nav></header><main>
+<section id="home" hidden>
   <h1 class="dashboard-title">Today's bookings</h1>
   <p id="dashboard-sync" role="status"></p><dl class="dashboard-stats" aria-live="polite">
     <div class="dashboard-stat"><dt>Total bookings</dt><dd id="stat-total">&mdash;</dd></div>
@@ -9,7 +9,7 @@
     <div class="dashboard-stat dashboard-revenue"><dt>Today's revenue</dt><dd id="stat-revenue">&mdash;</dd></div>
   </dl>
 </section>
-<section id="catalog" class="panel"><h2>Vegetable catalog</h2><form id="publish"><div class="product-basics"><label class="upload-tile"><input name="photo" type="file" accept="image/jpeg,image/png,image/webp"><img id="upload-preview" alt="" hidden><span id="upload-caption">Upload product photo</span></label><div class="product-identity"><label>Name<input name="name" required maxlength="100"></label><div class="category-picker"><span id="category-label">Category</span><details id="category-picker"><summary id="category-current" aria-labelledby="category-label category-current">Vegetables</summary><div id="categories"></div></details><input type="hidden" name="category"></div></div></div><div class="category-picker"><span id="pricing-label">Pricing method</span><details id="pricing-picker"><summary id="pricing-current" aria-labelledby="pricing-label pricing-current">By kilogram</summary><div class="picker-options"><button type="button" data-pricing="weight">By kilogram</button><button type="button" data-pricing="fixed">Fixed pack</button></div></details><input type="hidden" name="pricing" value="weight"></div><label id="fixed-unit" hidden>Pack size<input name="unit" placeholder="6 eggs" maxlength="40"></label><label id="price-label"><span id="price-caption">Price per kg (₹)</span><input name="price" type="text" inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?|[.][0-9]{1,2}" required></label><p id="pack-prices" aria-live="polite"></p><label id="quarter-stock">250 g packs in stock<input name="stock250" type="text" inputmode="numeric" pattern="[0-9]{1,6}" value="0" required></label><label id="half-stock">500 g packs in stock<input name="stock500" type="text" inputmode="numeric" pattern="[0-9]{1,6}" value="0" required></label><label><span id="stock-label">1 kg packs in stock</span><input name="stock" type="text" inputmode="numeric" pattern="[0-9]{1,6}" required></label><fieldset><legend>Product tags</legend>
+<section id="catalog" class="panel" hidden><h2>Vegetable catalog</h2><form id="publish"><div class="product-basics"><label class="upload-tile"><input name="photo" type="file" accept="image/jpeg,image/png,image/webp"><img id="upload-preview" alt="" hidden><span id="upload-caption">Upload product photo</span></label><div class="product-identity"><label>Name<input name="name" required maxlength="100"></label><div class="category-picker"><span id="category-label">Category</span><details id="category-picker"><summary id="category-current" aria-labelledby="category-label category-current">Vegetables</summary><div id="categories"></div></details><input type="hidden" name="category"></div></div></div><div class="category-picker"><span id="pricing-label">Pricing method</span><details id="pricing-picker"><summary id="pricing-current" aria-labelledby="pricing-label pricing-current">By kilogram</summary><div class="picker-options"><button type="button" data-pricing="weight">By kilogram</button><button type="button" data-pricing="fixed">Fixed pack</button></div></details><input type="hidden" name="pricing" value="weight"></div><label id="fixed-unit" hidden>Pack size<input name="unit" placeholder="6 eggs" maxlength="40"></label><label id="price-label"><span id="price-caption">Price per kg (₹)</span><input name="price" type="text" inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?|[.][0-9]{1,2}" required></label><p id="pack-prices" aria-live="polite"></p><label id="quarter-stock">250 g packs in stock<input name="stock250" type="text" inputmode="numeric" pattern="[0-9]{1,6}" value="0" required></label><label id="half-stock">500 g packs in stock<input name="stock500" type="text" inputmode="numeric" pattern="[0-9]{1,6}" value="0" required></label><label><span id="stock-label">1 kg packs in stock</span><input name="stock" type="text" inputmode="numeric" pattern="[0-9]{1,6}" required></label><fieldset><legend>Product tags</legend>
 <label class="toggle-row"><span>Regular</span><input type="checkbox" role="switch" name="tags" value="Regular"><span class="toggle-track" aria-hidden="true"></span><span class="toggle-state" aria-hidden="true"></span></label>
 <label class="toggle-row"><span>Today’s special</span><input type="checkbox" role="switch" name="tags" value="Today's special"><span class="toggle-track" aria-hidden="true"></span><span class="toggle-state" aria-hidden="true"></span></label>
 <label class="toggle-row"><span>Leafy vegetables</span><input type="checkbox" role="switch" name="tags" value="Leafy vegetables"><span class="toggle-track" aria-hidden="true"></span><span class="toggle-state" aria-hidden="true"></span></label>
@@ -18,21 +18,69 @@
 </fieldset>
 <label class="toggle-row"><span>Enable offer</span><input type="checkbox" role="switch" name="offer"><span class="toggle-track" aria-hidden="true"></span><span class="toggle-state" aria-hidden="true"></span></label>
 <label id="discount-field" hidden><span id="discount-caption">Discount off each kg (₹)</span><input name="discount" type="text" inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?|[.][0-9]{1,2}" disabled></label>
-<button>Publish vegetable</button></form><h3>Published vegetables</h3><p id="catalog-mode" hidden>Demo catalog · sample prices and stock</p><div class="grid" id="products"></div></section>
-<section id="bookings" class="panel"><h2>Bookings</h2><p id="booking-sync" role="status"></p><section><h3>Pending</h3><div id="pending-orders"></div></section><section><h3>Accepted</h3><div id="accepted-orders"></div></section><section><h3>Delivered</h3><div id="delivered-orders"></div></section><section><h3>Other bookings</h3><div id="orders"></div></section></section>
-<section id="profile" class="panel"><h2>Admin profile</h2><p id="account"></p></section>
+<button id="publish-action">Publish vegetable</button> <button type="button" id="cancel-edit" hidden>Cancel edit</button></form><h3>Published vegetables</h3><p id="catalog-mode" hidden>Demo catalog · sample prices and stock</p><div class="grid" id="products"></div></section>
+<section id="bookings" class="panel" hidden><h2>Bookings</h2><p id="booking-sync" role="status"></p><section><h3>Pending</h3><div id="pending-orders"></div></section><section><h3>Accepted</h3><div id="accepted-orders"></div></section><section><h3>Delivered</h3><div id="delivered-orders"></div></section><section><h3>Other bookings</h3><div id="orders"></div></section></section>
+<section id="offers" hidden>
+  <h2>Offers</h2>
+  <section class="panel offer-card">
+    <h3>Free delivery</h3>
+    <form id="delivery-offer-form">
+    <label>Free delivery for subtotals above (₹)
+      <input name="threshold" required inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?" maxlength="12">
+    </label>
+    <p>Uses the item subtotal after discounts, before delivery.</p>
+    <button id="save-delivery-offer" disabled>Publish delivery offer</button>
+    <p id="delivery-offer-status" role="status"></p>
+    </form>
+  </section>
+  <section class="panel offer-card">
+  <h3>Coupons</h3>
+  <form id="coupon-form">
+    <label>Coupon code<input name="code" required pattern="[a-zA-Z0-9\-]{3,32}" maxlength="32"></label>
+    <label>Discount per order (₹)<input name="discount" required inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?"></label>
+    <label>Total budget (₹)<input name="budget" required inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?"></label>
+    <fieldset id="coupon-audience">
+      <legend>Who can use this coupon?</legend><div id="coupon-audience-options"></div></fieldset>
+    <div id="coupon-targets" hidden>
+      <label>Search by username or email<input id="customer-search" type="search" minlength="2"></label>
+      <button type="button" id="find-customers">Search customers</button>
+      <div id="customer-results" aria-live="polite"></div><ul id="selected-customers"></ul>
+    </div>
+    <button id="publish-coupon" disabled>Publish coupon</button>
+    <p id="coupon-status" role="status"></p>
+  </form>
+  <h4>Published coupons</h4><div id="coupon-list"></div>
+  </section>
+</section>
+<section id="profile" class="account-page" hidden>
+  <h1>My profile</h1>
+  <section class="panel">
+    <h2>Account details</h2>
+    <dl class="account-details">
+      <dt>Email address</dt><dd id="account"></dd>
+      <dt>Role</dt><dd>Store admin</dd>
+    </dl>
+  </section>
+  <button id="admin-logout" type="button">Log out</button>
+  <p id="logout-error" class="field-error" role="status"></p>
+</section>
+<section id="admin-login" class="panel account-page" aria-labelledby="admin-login-title" hidden>
+  <h1 id="admin-login-title">Admin sign in</h1>
+  <p>We’ll email a six-digit code to your admin email address.</p>
+  <form id="admin-send" novalidate>
+    <label>Email address <span class="field-error" aria-hidden="true">*</span>
+      <input name="email" type="email" autocomplete="email" autocapitalize="none" required aria-describedby="admin-email-error">
+    </label>
+    <p id="admin-email-error" class="field-error" role="status"></p>
+    <button>Send sign-in code</button>
+  </form>
+  <p id="admin-code-status" role="status"></p>
+  <form id="admin-verify" novalidate hidden>
+    <label>Six-digit code <span class="field-error" aria-hidden="true">*</span>
+      <input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required aria-describedby="admin-code-error">
+    </label>
+    <p id="admin-code-error" class="field-error" role="status"></p>
+    <button>Verify and continue</button>
+  </form>
+</section>
 <output id="notice" aria-live="polite"></output></main><script type="module" src="/app.mjs"></script></body></html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-

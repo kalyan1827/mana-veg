@@ -1,4 +1,4 @@
-import { customerAuth } from './auth.mjs';
+import { emailAuth } from './auth.mjs';
 import { readSession, revokeSession } from './sessions.mjs';
 import { deliveryEligibility } from './delivery.mjs';
 import { shopRoutes } from './shop.mjs';
@@ -14,7 +14,7 @@ export default {
       if (request.headers.get('Origin') !== new URL(request.url).origin) return privateResponse({error:'Invalid origin'},403);
       return privateResponse({ok:true},200,{'Set-Cookie':await revokeSession(env.DB,request)});
     }
-    if (path === '/api/auth/otp/request' || path === '/api/auth/otp/verify') return customerAuth(request, env, path, privateResponse);
+    if (path === '/api/auth/otp/request' || path === '/api/auth/otp/verify') return emailAuth(request, env, path, privateResponse);
     if (path === '/api/delivery/check' && request.method === 'POST') {
       const point = await request.json().catch(() => null);
       const dispatch = await env.DB.prepare('SELECT lat,lon FROM settings WHERE id=1').first();

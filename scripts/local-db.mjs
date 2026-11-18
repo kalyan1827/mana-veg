@@ -11,6 +11,10 @@ export function localDatabase() {
   sqlite.exec(readFileSync(new URL('../apps/backend/migrations/0004_weight_pricing.sql',import.meta.url),'utf8'));
   sqlite.exec(readFileSync(new URL('../apps/backend/migrations/0005_catalog_promotions.sql',import.meta.url),'utf8'));
   sqlite.exec(readFileSync(new URL('../apps/backend/migrations/0006_order_delivery.sql',import.meta.url),'utf8'));
+  sqlite.exec(readFileSync(new URL('../apps/backend/migrations/0007_kilo_only_offers.sql',import.meta.url),'utf8'));
+  sqlite.exec(readFileSync(new URL('../apps/backend/migrations/0008_coupons.sql',import.meta.url),'utf8'));
+  sqlite.exec(readFileSync(new URL('../apps/backend/migrations/0009_first_order_coupons.sql',import.meta.url),'utf8'));
+  sqlite.exec(readFileSync(new URL('../apps/backend/migrations/0010_free_delivery.sql',import.meta.url),'utf8'));
   sqlite.exec("DELETE FROM products WHERE id IN ('tomato','onions')");
   const insertPack = sqlite.prepare(`INSERT INTO products
     (id,category,name,unit,price,stock,active,photo,pack_group,kilo_price)

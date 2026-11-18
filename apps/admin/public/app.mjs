@@ -1,9 +1,14 @@
 const get = id => document.getElementById(id);
 const notice = message => { get('notice').textContent = message; };
 const money = paise => new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR'}).format(paise/100);
+let signedIn=false;
 async function api(path, options) {
   const response = await fetch('/api/'+path,options);
   const result = await response.json();
+  if(response.status===401 && signedIn && path.startsWith('admin/')) {
+    signedIn=false;
+    showAdminPage();
+  }
   if (!response.ok) throw new Error(result.error);
   return result;
 }
@@ -127,16 +132,57 @@ async function loadCatalog() {
         original.className='catalog-original-price';
         row.append(original, ' ');
       }
-      row.append(text('strong',money(pack.price)),' · '+pack.stock+' in stock');
+      row.append(text('strong',money(pack.price)));
       card.append(row);
     }
+    const edit=text('button','Edit product');
+    edit.type='button';
+    edit.onclick=()=>{
+      const fields=publishForm.elements;
+      publishForm.reset();
+      editing={id:product.pack_group ?? product.id,photo:product.has_photo ? '/api/photos/'+product.id : '',
+        previousStock:Object.fromEntries(packs.map(pack=>[pack.id,pack.stock]))};
+      const base=packs.find(pack=>pack.unit==='1 kg') ?? product;
+      fields.name.value=product.name;
+      selectCategory(categories.find(category=>category.id===product.category));
+      fields.pricing.value=product.pack_group ? 'weight' : 'fixed';
+      fields.unit.value=base.unit;
+      fields.price.value=(base.original_price ?? base.price)/100;
+      fields.stock.value=base.stock;
+      fields.stock250.value=packs.find(pack=>pack.unit==='250 g')?.stock ?? 0;
+      fields.stock500.value=packs.find(pack=>pack.unit==='500 g')?.stock ?? 0;
+      fields.offer.checked=base.original_price>base.price;
+      fields.discount.value=fields.offer.checked ? (base.original_price-base.price)/100 : '';
+      const tags=JSON.parse(product.tags ?? '[]');
+      for(const checkbox of publishForm.querySelectorAll('[name="tags"]')) checkbox.checked=tags.includes(checkbox.value);
+      get('publish-action').textContent='Save and publish';
+      get('cancel-edit').hidden=false;
+      previewPricing();
+      previewPhoto();
+      fields.name.focus();
+    };
+    card.append(edit);
     return card;
   }));
 }
 const publishForm = get('publish');
+let editing;
+function resetPublishForm() {
+  editing=undefined;
+  publishForm.reset();
+  get('publish-action').textContent='Publish vegetable';
+  get('cancel-edit').hidden=true;
+  previewPhoto();
+  previewPricing();
+}
+get('cancel-edit').onclick=()=>{
+  resetPublishForm();
+  loadCatalog().catch(error=>notice(error.message));
+};
 function previewPricing() {
   const {pricing,unit,price,stock250,stock500,offer,discount} = publishForm.elements;
   const byWeight = pricing.value === 'weight';
+  get('pricing-picker').hidden=Boolean(editing);
   get('pricing-current').textContent = byWeight ? 'By kilogram' : 'Fixed pack';
   get('fixed-unit').hidden = byWeight;
   get('quarter-stock').hidden = !byWeight;
@@ -149,14 +195,14 @@ function previewPricing() {
   get('discount-field').hidden=!offer.checked;
   discount.disabled=!offer.checked;
   discount.required=offer.checked;
-  get('discount-caption').textContent=byWeight ? 'Discount off each kg (₹)' : 'Discount off each pack (₹)';
+  get('discount-caption').textContent=byWeight ? 'Discount on the 1 kg pack (₹)' : 'Discount off each pack (₹)';
   const base=Math.round(Number(price.value)*100);
   const amount=offer.checked ? Math.round(Number(discount.value || NaN)*100) : 0;
   const paise=base-amount;
   const valid=Number.isFinite(amount) && amount>=1 && paise>=(byWeight ? 2 : 1);
   discount.setCustomValidity(offer.checked && Number.isFinite(amount) && !valid ? 'Enter a discount that leaves a valid selling price.' : '');
   get('pack-prices').textContent = paise >= (byWeight ? 2 : 1)
-    ? byWeight ? '250 g: '+money(Math.round(paise/4))+' · 500 g: '+money(Math.round(paise/2))+' · 1 kg: '+money(paise)
+    ? byWeight ? '250 g: '+money(Math.round(base/4))+' · 500 g: '+money(Math.round(base/2))+' · 1 kg: '+money(paise)
       : 'Price per pack: '+money(paise)
     : '';
 }
@@ -165,10 +211,10 @@ function previewPhoto() {
   if(previewUrl) URL.revokeObjectURL(previewUrl);
   const image=get('upload-preview');
   const file=publishForm.elements.photo.files[0];
-  image.hidden=!file;
-  get('upload-caption').textContent=file ? 'Change photo' : 'Upload product photo';
+  image.hidden=!file && !editing?.photo;
+  get('upload-caption').textContent=image.hidden ? 'Upload product photo' : 'Change photo';
   previewUrl=file ? URL.createObjectURL(file) : undefined;
-  if(previewUrl) image.src=previewUrl;
+  if(previewUrl || editing?.photo) image.src=previewUrl ?? editing.photo;
   else image.removeAttribute('src');
 }
 publishForm.elements.photo.addEventListener('change',previewPhoto);
@@ -199,17 +245,16 @@ publishForm.onsubmit=async event=>{
   event.preventDefault();
   event.submitter.disabled=true;
   try {
-    await api('admin/catalog',{method:'POST',body:new FormData(event.currentTarget)});
-    get('publish').reset();
-    previewPhoto();
-    previewPricing();
+    const body=new FormData(publishForm);
+    const target=editing;
+    if(target) body.set('previousStock',JSON.stringify(target.previousStock));
+    await api(target ? 'admin/catalog/'+target.id : 'admin/catalog',{method:target ? 'PUT' : 'POST',body});
+    resetPublishForm();
     await loadCatalog();
-    notice('Vegetable published.');
+    notice(target ? 'Product updated and published.' : 'Vegetable published.');
   } catch(error) { notice(error.message); }
   finally { event.submitter.disabled=false; }
 };
-Promise.all([loadCatalog(),api('profile').then(({profile})=>{get('account').textContent=profile.email+' · '+profile.role;})]).catch(error=>notice(error.message));
-
 async function refreshVisibleBookings() {
   if (document.hidden || (get('home').hidden && get('bookings').hidden)) return;
   try {
@@ -224,16 +269,156 @@ async function refreshVisibleBookings() {
 }
 
 
+const couponForm=get('coupon-form');
+const deliveryOfferForm=get('delivery-offer-form');
+async function loadDeliveryOffer() {
+  const button=get('save-delivery-offer');
+  const status=get('delivery-offer-status');
+  button.disabled=true;
+  status.textContent='Loading delivery offer…';
+  try {
+    const {threshold}=await api('admin/delivery-offer');
+    deliveryOfferForm.elements.threshold.value=threshold/100;
+    status.textContent='Published threshold: '+money(threshold);
+    button.disabled=false;
+  } catch(error) {
+    status.textContent='Could not load the delivery offer. '+error.message;
+  }
+}
+deliveryOfferForm.onsubmit=async event=>{
+  event.preventDefault();
+  const button=get('save-delivery-offer');
+  const status=get('delivery-offer-status');
+  button.disabled=true;
+  try {
+    const threshold=Math.round(Number(deliveryOfferForm.elements.threshold.value)*100);
+    const saved=await api('admin/delivery-offer',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({threshold})});
+    status.textContent='Published. Free delivery for subtotals above '+money(saved.threshold)+'.';
+  } catch(error) {status.textContent=error.message;}
+  finally {button.disabled=false;}
+};
+const selectedCustomers=new Map();
+let couponAudiences=[];
+function showSelectedCustomers() {
+  get('selected-customers').replaceChildren(...[...selectedCustomers].map(([email,label])=>{
+    const row=text('li',label+' ');
+    const remove=text('button','Remove');
+    remove.type='button';
+    remove.onclick=()=>{selectedCustomers.delete(email); showSelectedCustomers();};
+    row.append(remove);
+    return row;
+  }));
+}
+get('coupon-audience').onchange=event=>{
+  const selected=event.target;
+  if(selected.name!=='audience') return;
+  for(const control of couponForm.querySelectorAll('[name="audience"]')) control.checked=control===selected;
+  get('coupon-targets').hidden=!couponAudiences.find(option=>option.id===selected.value)?.requiresCustomers;
+};
+get('find-customers').onclick=async()=>{
+  const query=get('customer-search').value.trim();
+  if(query.length<2) return notice('Enter at least two characters.');
+  try {
+    const {customers}=await api('admin/customers?q='+encodeURIComponent(query));
+    get('customer-results').replaceChildren(...customers.map(({email,username})=>{
+      const label=username ? username+' · '+email : email;
+      const option=text('button',label);
+      option.type='button';
+      option.onclick=()=>{selectedCustomers.set(email,label); showSelectedCustomers();};
+      return option;
+    }));
+    if(!customers.length) get('customer-results').textContent='No matching customers.';
+  } catch(error) {notice(error.message);}
+};
+get('customer-search').onkeydown=event=>{
+  if(event.key==='Enter') {event.preventDefault(); get('find-customers').click();}
+};
+async function loadCoupons() {
+  const {coupons,audiences}=await api('admin/coupons');
+  if(!Array.isArray(audiences) || !audiences.length) throw new Error('The server returned no audience options.');
+  const selected=new FormData(couponForm).get('audience');
+  couponAudiences=audiences;
+  get('coupon-audience-options').replaceChildren(...audiences.map(option=>{
+    const row=text('label','');
+    row.className='toggle-row';
+    const control=document.createElement('input');
+    control.type='checkbox';
+    control.name='audience';
+    control.value=option.id;
+    control.defaultChecked=Boolean(option.default);
+    control.checked=selected ? selected===option.id : control.defaultChecked;
+    control.setAttribute('role','switch');
+    const track=text('span','');
+    track.className='toggle-track';
+    track.setAttribute('aria-hidden','true');
+    row.append(text('span',option.label),control,track);
+    return row;
+  }));
+  get('coupon-list').replaceChildren(...coupons.map(coupon=>text('p',coupon.code+' · '+money(coupon.discount)+' off · '+
+    (audiences.find(option=>option.id===coupon.audience)?.label ?? coupon.audience)+' · '+money(coupon.budget-coupon.used)+' remaining')));
+  if(!coupons.length) get('coupon-list').textContent='No coupons yet.';
+}
+couponForm.onsubmit=async event=>{
+  event.preventDefault();
+  const button=get('publish-coupon');
+  const status=get('coupon-status');
+  if(button.disabled) return;
+  const fields=new FormData(couponForm);
+  const audience=couponAudiences.find(option=>option.id===fields.get('audience'));
+  if(!audience) {
+    status.textContent='Choose a coupon audience.';
+    return;
+  }
+  button.disabled=true;
+  status.textContent='Publishing coupon…';
+  try {
+    await api('admin/coupons',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      code:fields.get('code'),discount:Math.round(Number(fields.get('discount'))*100),
+      budget:Math.round(Number(fields.get('budget'))*100),
+      customers:audience.requiresCustomers ? [...selectedCustomers.keys()] : null,
+      audience:audience.id
+    })});
+    couponForm.reset();
+    selectedCustomers.clear();
+    showSelectedCustomers();
+    get('customer-results').replaceChildren();
+    get('coupon-targets').hidden=true;
+    status.textContent='Coupon published.';
+    try {
+      await loadCoupons();
+    } catch(error) {
+      status.textContent='Coupon published. Could not refresh the coupon list. '+error.message;
+    }
+  } catch(error) {status.textContent=error.message;}
+  finally {button.disabled=false;}
+};
+
 function showAdminPage() {
-  const pages=['home','catalog','bookings','profile'];
+  const pages=['home','catalog','bookings','offers','profile'];
   const requested=location.hash.slice(1);
   const page=pages.includes(requested) ? requested : 'home';
-  for(const id of pages) get(id).hidden=id!==page;
+  for(const id of pages) get(id).hidden=!signedIn || id!==page;
+  document.querySelector('header nav').hidden=!signedIn;
+  get('admin-login').hidden=signedIn;
+  if(!signedIn) return;
   for(const link of document.querySelectorAll('header nav a')) {
     if(link.hash==='#'+page) link.setAttribute('aria-current','page');
     else link.removeAttribute('aria-current');
   }
   window.scrollTo(0,0);
+  if(page==='offers') {
+    loadDeliveryOffer();
+    const button=get('publish-coupon');
+    const status=get('coupon-status');
+    button.disabled=true;
+    status.textContent='Loading coupons and audience options…';
+    loadCoupons().then(()=>{
+      status.textContent='';
+      button.disabled=false;
+    }).catch(error=>{
+      status.textContent='Could not load coupons and audience options. '+error.message;
+    });
+  }
   refreshVisibleBookings();
 }
 window.addEventListener('hashchange',showAdminPage);
@@ -243,7 +428,77 @@ async function pollBookings() {
   setTimeout(pollBookings,5000);
 }
 setTimeout(pollBookings,5000);
-showAdminPage();
 
-
-
+async function loadAdminAccount() {
+  const {profile}=await api('profile');
+  if(profile.role!=='admin') throw new Error('Use your store admin account to sign in.');
+  get('account').textContent=profile.email;
+  signedIn=true;
+  showAdminPage();
+  loadCatalog().catch(error=>notice(error.message));
+}
+function bindAdminAuth(formId,field,errorId,missing,invalid,submit) {
+  const form=get(formId);
+  const input=form.elements[field];
+  const error=get(errorId);
+  function showError(message) {
+    error.textContent=message;
+    if(message) input.setAttribute('aria-invalid','true');
+    else input.removeAttribute('aria-invalid');
+  }
+  input.addEventListener('input',()=>showError(''));
+  form.onsubmit=async event=>{
+    event.preventDefault();
+    showError('');
+    if(!input.validity.valid) {
+      showError(input.validity.valueMissing ? missing : invalid);
+      input.focus();
+      return;
+    }
+    const button=form.querySelector('button');
+    button.disabled=true;
+    try { await submit(input.value); }
+    catch(error) { showError(error.message); }
+    finally { button.disabled=false; }
+  };
+}
+function postAuth(path,data={}) {
+  return api('auth/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+}
+let codeEmail;
+bindAdminAuth('admin-send','email','admin-email-error','Enter your email address.','Enter a valid email address.',async email=>{
+  const verify=get('admin-verify');
+  verify.hidden=true;
+  verify.reset();
+  verify.elements.code.removeAttribute('aria-invalid');
+  get('admin-code-error').textContent='';
+  get('admin-code-status').textContent='';
+  await postAuth('otp/request',{email,mode:'admin'});
+  codeEmail=email;
+  verify.hidden=false;
+  get('admin-code-status').textContent='Code sent to '+email+'.';
+  verify.elements.code.focus();
+});
+bindAdminAuth('admin-verify','code','admin-code-error','Enter your six-digit code.','Enter exactly six digits.',async code=>{
+  await postAuth('otp/verify',{email:codeEmail,code,mode:'admin'});
+  await loadAdminAccount();
+  get('admin-send').reset();
+  get('admin-verify').reset();
+  get('admin-verify').hidden=true;
+  get('admin-code-status').textContent='';
+  if(location.hash==='#login') window.history.replaceState(null,'','#home');
+});
+get('admin-logout').onclick=async event=>{
+  const button=event.currentTarget;
+  button.disabled=true;
+  try {
+    await postAuth('logout');
+    window.history.replaceState(null,'','#login');
+    location.reload();
+  } catch(error) {
+    get('logout-error').textContent=error.message;
+  } finally {
+    button.disabled=false;
+  }
+};
+loadAdminAccount().catch(()=>showAdminPage());
