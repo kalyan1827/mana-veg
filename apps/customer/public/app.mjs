@@ -136,8 +136,7 @@ function updateCartBar() {
   const items=[...cart.values()];
   const count=items.reduce((sum,item)=>sum+item.quantity,0);
   get('cart-bar-count').textContent=count+' '+(count===1 ? 'item' : 'items')+' · '+money(subtotal());
-  const onShopView = !['#cart','#orders','#profile','#welcome','#login','#signup'].includes(location.hash);
-  get('cart-bar').hidden=!count || !onShopView;
+  get('cart-bar').hidden=!count || !['#home','#categories'].includes(location.hash);
   get('cart-checkout-bar').hidden=!count || location.hash!=='#cart';
   get('cart-pay-total').textContent=count ? money(payable()) : '';
 
@@ -152,14 +151,7 @@ function updateCartBar() {
           img.className='cart-pill-thumb';
           img.alt=product.name;
           img.src=productPhotoUrl(product);
-          img.onerror=()=>{
-            if (!img.dataset.fallback) {
-              img.dataset.fallback = '1';
-              img.src = '/logo.jpg';
-            } else {
-              img.style.display = 'none';
-            }
-          };
+          img.onerror=()=>{ img.style.display='none'; };
           return img;
         })
       );
@@ -198,8 +190,8 @@ function drawCart() {
   const count=[...cart.values()].reduce((sum,item)=>sum+item.quantity,0);
   get('cart-count').textContent=count ? String(count) : '';
   updateCartBar();
-  for(const button of document.querySelectorAll('.add-to-cart')) {
-    refreshCartButtons.get(button)?.();
+  for(const target of document.querySelectorAll('.add-to-cart, .product-action-wrap')) {
+    refreshCartButtons.get(target)?.();
   }
   checkout.hidden=!count;
   get('empty-cart').hidden=Boolean(count);
@@ -345,18 +337,39 @@ function productCard(variants) {
   const total=node('p','');
   total.className='product-total';
   total.setAttribute('aria-live','polite');
-  const button=action('Add to cart',()=>{
-    change(variant,(cart.get(variant.id)?.quantity ?? 0)+1);
-  });
-  button.className='add-to-cart';
+  const actionWrap=node('div','','product-action-wrap');
   function updateCartButton() {
     const quantity=cart.get(variant.id)?.quantity ?? 0;
     const remaining=Math.min(variant.stock,50)-quantity;
-    button.disabled=remaining<=0;
-    button.classList.toggle('in-cart',quantity>0);
-    button.textContent=!variant.stock ? 'Sold out' : button.disabled ? 'Pack limit reached' : 'Add to cart';
+    if(quantity>0) {
+      const stepper=node('div','','produce-stepper');
+      const minus=action('−',(e)=>{
+        e.stopPropagation();
+        change(variant,quantity-1);
+      });
+      minus.className='stepper-btn stepper-minus';
+      minus.setAttribute('aria-label','Remove one');
+      const qty=node('span',String(quantity),'stepper-qty');
+      const plus=action('+',(e)=>{
+        e.stopPropagation();
+        if(remaining>0) change(variant,quantity+1);
+        else notice('No more packs available.');
+      });
+      plus.className='stepper-btn stepper-plus';
+      plus.setAttribute('aria-label','Add one');
+      plus.disabled=remaining<=0;
+      stepper.append(minus,qty,plus);
+      actionWrap.replaceChildren(stepper);
+    } else {
+      const button=action(!variant.stock ? 'Sold out' : 'Add to cart',()=>{
+        change(variant,1);
+      });
+      button.className='add-to-cart';
+      button.disabled=!variant.stock;
+      actionWrap.replaceChildren(button);
+    }
   }
-  refreshCartButtons.set(button,updateCartButton);
+  refreshCartButtons.set(actionWrap,updateCartButton);
   function updateTotal() {
     packButtons.forEach((choice,index)=>choice.setAttribute('aria-pressed',String(variants[index]===variant)));
     total.textContent=money(variant.price)+' per pack';
@@ -365,7 +378,7 @@ function productCard(variants) {
   updateTotal();
   card.append(node('h3',product.name));
   if(hasOffer) card.append(node('span','Offer','product-offer'));
-  card.append(pack,total,button);
+  card.append(pack,total,actionWrap);
   return card;
 }
 function drawProductResults(container,products,search) {
