@@ -467,8 +467,8 @@ async function checkDelivery(form,status,copyToCheckout=false) {
     const {eligible,distanceKm}=await api('delivery/check',point);
     const current=coordinates(form);
     if(point.lat!==current.lat || point.lon!==current.lon) return;
-    const dist=Number.isFinite(distanceKm) ? ` (${distanceKm.toFixed(1)} km from Bowenpally)` : '';
-    el.textContent=eligible ? '✓ Delivery available'+dist : 'Outside our 20 km delivery area'+dist+'.';
+    const dist=Number.isFinite(distanceKm) ? ` (${distanceKm.toFixed(1)} km)` : '';
+    el.textContent=eligible ? '✓ Delivery available'+dist : 'Outside our delivery area'+dist+'.';
     el.classList.add(eligible ? 'status-ok' : 'status-error');
     if(copyToCheckout && eligible) {
       checkout.elements.lat.value=point.lat;

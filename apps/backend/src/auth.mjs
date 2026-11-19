@@ -59,21 +59,21 @@ function buildOtpEmail(code, mode, username) {
   const textContent = `Manakurgayalu — ${title}\n\nYour code is ${code}. It expires in 10 minutes.\n\nIf you did not request this code, you can ignore this email.`;
   const htmlContent = `<div style="margin:0;padding:24px 12px;background:#f7f4eb;font-family:system-ui,-apple-system,Arial,sans-serif;color:#35271e;">
   <div style="max-width:440px;margin:0 auto;background:#ffffff;border:1px solid #e1d8ca;border-radius:14px;overflow:hidden;">
-    <div style="background:#5a3e2b;color:#ffffff;padding:18px 20px;text-align:center;">
+    <div style="background:#1b7a37;color:#ffffff;padding:18px 20px;text-align:center;">
       <div style="font-family:Georgia,serif;font-size:22px;font-weight:700;letter-spacing:.3px;">Manakurgayalu</div>
-      <div style="font-size:12px;opacity:.88;margin-top:3px;">Fresh Local Vegetables · Bowenpally</div>
+      <div style="font-size:12px;opacity:.88;margin-top:3px;">Fresh Local Vegetables · Doorstep Delivery</div>
     </div>
     <div style="padding:24px 20px;text-align:center;">
-      <p style="margin:0 0 6px;font-size:16px;font-weight:700;color:#35271e;">${greeting}</p>
-      <p style="margin:0 0 18px;font-size:14px;line-height:1.5;color:#6c5b4d;">${subtitle}</p>
-      <div style="background:#f7f4eb;border:1px dashed #c7b294;border-radius:12px;padding:16px 12px;margin:0 auto 16px;">
-        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:#6c5b4d;margin-bottom:6px;">Your verification code</div>
-        <div style="font-family:ui-monospace,Consolas,monospace;font-size:32px;font-weight:700;letter-spacing:8px;color:#5a3e2b;">${code}</div>
+      <p style="margin:0 0 6px;font-size:16px;font-weight:700;color:#142718;">${greeting}</p>
+      <p style="margin:0 0 18px;font-size:14px;line-height:1.5;color:#4d6655;">${subtitle}</p>
+      <div style="background:#eef7f0;border:1px dashed #2e7d32;border-radius:12px;padding:16px 12px;margin:0 auto 16px;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:#4d6655;margin-bottom:6px;">Your verification code</div>
+        <div style="font-family:ui-monospace,Consolas,monospace;font-size:32px;font-weight:700;letter-spacing:8px;color:#1b7a37;">${code}</div>
       </div>
-      <p style="margin:0;font-size:12px;color:#6c5b4d;">Valid for <strong>10 minutes</strong> · Do not share this code with anyone.</p>
+      <p style="margin:0;font-size:12px;color:#4d6655;">Valid for <strong>10 minutes</strong> · Do not share this code with anyone.</p>
     </div>
-    <div style="background:#fbf8f2;border-top:1px solid #e1d8ca;padding:12px 20px;text-align:center;font-size:11px;color:#7d6b5d;">
-      Manakurgayalu · Gandhinagar, Bowenpally · Didn’t request this? Safely ignore this email.
+    <div style="background:#f6fbf7;border-top:1px solid #cfe0d4;padding:12px 20px;text-align:center;font-size:11px;color:#4d6655;">
+      Manakurgayalu · Fresh Local Vegetables · Didn’t request this? Safely ignore this email.
     </div>
   </div>
 </div>`;
