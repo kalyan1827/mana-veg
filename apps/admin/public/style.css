@@ -1363,6 +1363,20 @@ main h3 {
   font-size: .82rem
 }
 
+.wa-invoice-btn.wa-accepted-btn {
+  background: #25d366 !important;
+  color: #ffffff !important;
+  border: 1px solid #1ebe5d !important;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(37,211,102,.35)
+}
+
+.wa-invoice-btn.wa-accepted-btn:hover {
+  background: #1ebe5d !important;
+  border-color: #128c7e !important;
+  color: #ffffff !important
+}
+
 #bookings .actions .btn-action-reject,
 #dashboard-active .actions .btn-action-reject,
 .btn-action-reject {

@@ -25,12 +25,37 @@ function whatsappInvoiceUrl(order) {
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const discount = Number(order.coupon_discount || 0);
   const fee = Number(order.fee || 0);
+  const shortId = String(order.id).slice(0, 8).toUpperCase();
+
+  if (order.status === 'Confirmed') {
+    const lines = [
+      '*Manankuragayalu — Order Accepted!* ✅',
+      '',
+      `Dear Customer, your order *#${shortId}* has been *ACCEPTED*!`,
+      '🚚 *Delivery Schedule:* Next day delivery directly to your doorstep tomorrow.',
+      '',
+      '*Order Summary:*',
+      ...items.map(item => `• ${item.name} (${item.unit}) × ${item.quantity} = ${money(item.price * item.quantity)}`),
+      '',
+      `Subtotal: ${money(subtotal)}`,
+      ...(discount > 0 ? [`Coupon Discount (${order.coupon_code || 'DISCOUNT'}): -${money(discount)}`] : []),
+      `Delivery Fee: ${fee === 0 ? 'FREE' : money(fee)}`,
+      `💰 *Total Payable on Delivery: ${money(order.total)}*`,
+      'Payment: Cash on Delivery / UPI',
+      '',
+      `📍 Delivery Address: ${order.address}`,
+      '',
+      'Our farm team is packing your fresh vegetables. Thank you for shopping with Manankuragayalu! 🥬🥦'
+    ];
+    return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(lines.join('\n'));
+  }
+
   const status = { Placed: 'Order Received', Confirmed: 'Order Confirmed', Delivered: 'Order Delivered', Rejected: 'Order Rejected' }[order.status] ?? order.status;
   const lines = [
     '*Manankuragayalu — Order Invoice*',
     `Status: ${status}`,
-    `Order ID: #${String(order.id).slice(0, 8).toUpperCase()}`,
-    `Delivery Slot: ${order.slot_label}`,
+    `Order ID: #${shortId}`,
+    `Delivery: Next day delivery`,
     '',
     '*Ordered Items:*',
     ...items.map(item => `• ${item.name} (${item.unit}) × ${item.quantity} = ${money(item.price * item.quantity)}`),
@@ -65,6 +90,9 @@ function bookingCard(order) {
         for (const control of controls.querySelectorAll('button')) control.disabled = true;
         try {
           await api('admin/orders/'+order.id+'/decision',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action})});
+          if (action === 'accept') {
+            notice('Order #' + String(order.id).slice(0,8).toUpperCase() + ' accepted! Click "📲 WhatsApp Accepted Message" to notify customer.');
+          }
           await loadBookings();
         } catch (error) { notice(error.message); }
         finally { for (const control of controls.querySelectorAll('button')) control.disabled = false; }
@@ -74,11 +102,12 @@ function bookingCard(order) {
   }
   const waUrl = whatsappInvoiceUrl(order);
   if (waUrl) {
-    const link = text('a','WhatsApp Invoice');
+    const isAccepted = order.status === 'Confirmed';
+    const link = text('a', isAccepted ? '📲 WhatsApp Accepted Message' : 'WhatsApp Invoice');
     link.href = waUrl;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
-    link.className = 'wa-invoice-btn';
+    link.className = 'wa-invoice-btn' + (isAccepted ? ' wa-accepted-btn' : '');
     controls.append(link);
   }
   if (controls.childElementCount) card.append(controls);
@@ -515,8 +544,39 @@ function showAdminPage() {
       status.textContent='Could not load coupons and audience options. '+error.message;
     });
   }
+  currentAdminPage = page;
   refreshVisibleBookings();
 }
+
+let currentAdminPage = 'home';
+function navigateAdminTab(targetHref) {
+  const cleanTarget = targetHref.replace(/^#/, '');
+  const pages = ['home', 'catalog', 'bookings', 'offers', 'profile'];
+  if (pages.includes(cleanTarget)) {
+    if (cleanTarget === 'home') {
+      window.history.replaceState(null, '', '#home');
+    } else if (currentAdminPage === 'home') {
+      window.history.pushState(null, '', '#' + cleanTarget);
+    } else {
+      window.history.replaceState(null, '', '#' + cleanTarget);
+    }
+    currentAdminPage = cleanTarget;
+    showAdminPage();
+    return true;
+  }
+  return false;
+}
+
+document.addEventListener('click', event => {
+  const anchor = event.target.closest('a[href^="#"]');
+  if (!anchor) return;
+  const href = anchor.getAttribute('href');
+  if (!href || href === '#') return;
+  if (navigateAdminTab(href)) {
+    event.preventDefault();
+  }
+});
+
 window.addEventListener('hashchange',showAdminPage);
 document.addEventListener('visibilitychange',refreshVisibleBookings);
 async function pollBookings() {

@@ -590,10 +590,21 @@ bind('checkout',async data=>{
     `*Total Payable on Delivery: ${money(result.order.total)}*`,
     `Address: ${order.address}`
   ].join('\n');
-  const waLink=node('a','Send order on WhatsApp','wa-btn');
-  waLink.href='https://wa.me/'+adminWa+'?text='+encodeURIComponent(waText);
-  waLink.target='_blank';
-  waLink.rel='noopener noreferrer';
+  const waReceiptUrl = 'https://wa.me/'+adminWa+'?text='+encodeURIComponent(waText);
+  const isReceiptSent = localStorage.getItem('wa_sent_' + result.order.id) === '1';
+  const waLink = node('button', isReceiptSent ? '✓ Sent to WhatsApp' : 'Send order on WhatsApp', 'wa-btn' + (isReceiptSent ? ' wa-btn-disabled' : ''));
+  waLink.type = 'button';
+  if (isReceiptSent) {
+    waLink.disabled = true;
+  } else {
+    waLink.onclick = () => {
+      window.open(waReceiptUrl, '_blank', 'noopener,noreferrer');
+      localStorage.setItem('wa_sent_' + result.order.id, '1');
+      waLink.textContent = '✓ Sent to WhatsApp';
+      waLink.classList.add('wa-btn-disabled');
+      waLink.disabled = true;
+    };
+  }
   get('receipt').replaceChildren(
     node('span','Order placed · Delivery next day · '+result.order.id+' · '+money(result.order.total)),
     ' ',
@@ -623,13 +634,53 @@ async function loadOrders(offset=0) {
       const badge=node('strong',status,'badge order-status-'+(order.status || '').toLowerCase());
       head.append(badge,node('strong',money(order.total),'order-card-total'));
       const meta=node('p',new Date(order.created).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Kolkata'})+' · Next day delivery','order-card-meta');
-      const itemsText=node('p',JSON.parse(order.items).map(item=>item.name+' ('+item.unit+') × '+item.quantity).join(', '),'order-card-items');
+      const items=JSON.parse(order.items || '[]');
+      const itemsText=node('p',items.map(item=>item.name+' ('+item.unit+') × '+item.quantity).join(', '),'order-card-items');
       const foot=node('div','','order-card-foot');
-      const waLink=node('a','WhatsApp store','wa-btn');
-      waLink.href='https://wa.me/'+adminWa+'?text='+encodeURIComponent(`Hi Manakurgayalu, regarding Order #${shortId} (${order.id})`);
-      waLink.target='_blank';
-      waLink.rel='noopener noreferrer';
-      foot.append(node('small','Order #'+shortId),waLink);
+
+      // Build complete invoice bill message for store admin
+      const subtotal = items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
+      const fee = Number(order.fee || 0);
+      const discount = Math.max(0, (subtotal + fee) - Number(order.total || 0));
+      const dateStr = new Date(order.created).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Kolkata'});
+      const waInvoiceText = [
+        '*Manankuragayalu — Order Invoice*',
+        `Order ID: #${shortId} (${order.id})`,
+        `Date: ${dateStr}`,
+        `Status: ${status}`,
+        `Phone: ${order.phone}`,
+        `Delivery Address: ${order.address}`,
+        `Delivery Schedule: Next day delivery`,
+        '',
+        '*Ordered Items:*',
+        ...items.map(item => `• ${item.name} (${item.unit}) × ${item.quantity} = ${money(item.price * item.quantity)}`),
+        '',
+        `Subtotal: ${money(subtotal)}`,
+        ...(discount > 0 ? [`Coupon Discount: -${money(discount)}`] : []),
+        `Delivery Fee: ${fee === 0 ? 'FREE' : money(fee)}`,
+        `*Total Payable on Delivery: ${money(order.total)}*`,
+        'Payment Method: Cash on Delivery / UPI',
+        '',
+        'Hi Manankuragayalu, here are my complete order details. Please confirm delivery for tomorrow!'
+      ].join('\n');
+      const waUrl = 'https://wa.me/' + adminWa + '?text=' + encodeURIComponent(waInvoiceText);
+
+      const isSent = localStorage.getItem('wa_sent_' + order.id) === '1';
+      const waBtn = node('button', isSent ? '✓ Sent to WhatsApp' : 'WhatsApp store', 'wa-btn' + (isSent ? ' wa-btn-disabled' : ''));
+      waBtn.type = 'button';
+      if (isSent) {
+        waBtn.disabled = true;
+      } else {
+        waBtn.onclick = () => {
+          window.open(waUrl, '_blank', 'noopener,noreferrer');
+          localStorage.setItem('wa_sent_' + order.id, '1');
+          waBtn.textContent = '✓ Sent to WhatsApp';
+          waBtn.classList.add('wa-btn-disabled');
+          waBtn.disabled = true;
+        };
+      }
+
+      foot.append(node('small','Order #'+shortId),waBtn);
       card.append(head,meta,itemsText,foot);
       return card;
     });
@@ -690,8 +741,40 @@ function showPage() {
   notice('');
   updateCartBar();
   window.scrollTo(0,0);
+  currentCustomerPage = page;
   if(page==='orders') loadOrders();
 }
+
+let currentCustomerPage = 'home';
+function navigateTab(targetHref) {
+  const aliases = {'categories-nav':'categories','cart-section':'cart','my-orders':'orders','catalog':'home','support':'profile'};
+  const cleanTarget = targetHref.replace(/^#/, '');
+  const targetPage = aliases[cleanTarget] ?? cleanTarget;
+  const tabPages = ['home','categories','cart','orders','profile','delivery'];
+  if (tabPages.includes(targetPage)) {
+    if (targetPage === 'home') {
+      window.history.replaceState(null, '', '#home');
+    } else if (currentCustomerPage === 'home') {
+      window.history.pushState(null, '', '#' + targetPage);
+    } else {
+      window.history.replaceState(null, '', '#' + targetPage);
+    }
+    showPage();
+    return true;
+  }
+  return false;
+}
+
+document.addEventListener('click', event => {
+  const anchor = event.target.closest('a[href^="#"]');
+  if (!anchor) return;
+  const href = anchor.getAttribute('href');
+  if (!href || href === '#') return;
+  if (navigateTab(href)) {
+    event.preventDefault();
+  }
+});
+
 drawCart();
 loadProfile().then(()=>{
   window.addEventListener('hashchange',showPage);

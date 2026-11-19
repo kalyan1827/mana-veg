@@ -2391,6 +2391,17 @@ body.has-cart-bar.has-delivery-progress {
   font-size: .8rem
 }
 
+.wa-btn.wa-btn-disabled,
+.wa-btn:disabled {
+  background: #e8ece9 !important;
+  color: #6b7f71 !important;
+  border-color: #c4d4c8 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  opacity: .85 !important;
+  box-shadow: none !important
+}
+
 /* Tab 5: Profile & Delivery */
 .profile-quick-links {
   grid-template-columns: repeat(3, minmax(0, 1fr));
