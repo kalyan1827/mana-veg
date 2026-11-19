@@ -6,9 +6,12 @@
   "preview_urls": false,
   "vars": {
     "BREVO_SENDER": "manaveg083@gmail.com",
+    "ADMIN_WHATSAPP": "919398750721",
     "DISPATCH_MAP_URL": "https://goo.gl/maps/Fu9qJPyhiq6taQaA9?g_st=aw"
   },
-  "d1_databases": [{"binding":"DB","database_name":"manankuragayalu","database_id":"REPLACE_WITH_D1_ID"}],
-  "r2_buckets": [{"binding":"PHOTOS","bucket_name":"manankuragayalu-photos"}],
-  "triggers": {"crons":["*/5 * * * *"]}
+  "d1_databases": [{"binding":"DB","database_name":"manankuragayalu","database_id":"3dda9aa3-cec9-4f2f-a8c6-ed572d391be6","migrations_dir":"migrations"}]
+  // Uncomment after enabling R2 and creating the bucket:
+  // "r2_buckets": [{"binding":"PHOTOS","bucket_name":"manankuragayalu-photos"}],
+  // Uncomment once a scheduled() handler is implemented in src/index.mjs:
+  // "triggers": {"crons":["*/5 * * * *"]}
 }

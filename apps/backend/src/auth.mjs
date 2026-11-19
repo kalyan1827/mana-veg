@@ -8,6 +8,49 @@ async function digest(secret, email, code) {
   return Array.from(new Uint8Array(hash), x => x.toString(16).padStart(2,'0')).join('');
 }
 
+function buildOtpEmail(code, mode, username) {
+  const title = mode === 'signup'
+    ? 'Verify your new account'
+    : mode === 'admin'
+      ? 'Admin portal sign-in'
+      : 'Sign in to your account';
+  const greeting = mode === 'signup' && username
+    ? `Welcome, ${username.replace(/[&<>"']/g, '')}!`
+    : 'Hello,';
+  const subtitle = mode === 'signup'
+    ? 'Use the 6-digit code below to finish creating your Manakurgayalu account.'
+    : mode === 'admin'
+      ? 'Use the 6-digit code below to sign in to the Manakurgayalu Store Admin portal.'
+      : 'Use the 6-digit code below to sign in to Manakurgayalu.';
+  const subject = mode === 'signup'
+    ? `${code} is your Manakurgayalu signup code`
+    : mode === 'admin'
+      ? `${code} is your Manakurgayalu Admin sign-in code`
+      : `${code} is your Manakurgayalu sign-in code`;
+  const textContent = `Manakurgayalu — ${title}\n\nYour code is ${code}. It expires in 10 minutes.\n\nIf you did not request this code, you can ignore this email.`;
+  const htmlContent = `<div style="margin:0;padding:24px 12px;background:#f7f4eb;font-family:system-ui,-apple-system,Arial,sans-serif;color:#35271e;">
+  <div style="max-width:440px;margin:0 auto;background:#ffffff;border:1px solid #e1d8ca;border-radius:14px;overflow:hidden;">
+    <div style="background:#5a3e2b;color:#ffffff;padding:18px 20px;text-align:center;">
+      <div style="font-family:Georgia,serif;font-size:22px;font-weight:700;letter-spacing:.3px;">Manakurgayalu</div>
+      <div style="font-size:12px;opacity:.88;margin-top:3px;">Fresh Local Vegetables · Bowenpally</div>
+    </div>
+    <div style="padding:24px 20px;text-align:center;">
+      <p style="margin:0 0 6px;font-size:16px;font-weight:700;color:#35271e;">${greeting}</p>
+      <p style="margin:0 0 18px;font-size:14px;line-height:1.5;color:#6c5b4d;">${subtitle}</p>
+      <div style="background:#f7f4eb;border:1px dashed #c7b294;border-radius:12px;padding:16px 12px;margin:0 auto 16px;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:#6c5b4d;margin-bottom:6px;">Your verification code</div>
+        <div style="font-family:ui-monospace,Consolas,monospace;font-size:32px;font-weight:700;letter-spacing:8px;color:#5a3e2b;">${code}</div>
+      </div>
+      <p style="margin:0;font-size:12px;color:#6c5b4d;">Valid for <strong>10 minutes</strong> · Do not share this code with anyone.</p>
+    </div>
+    <div style="background:#fbf8f2;border-top:1px solid #e1d8ca;padding:12px 20px;text-align:center;font-size:11px;color:#7d6b5d;">
+      Manakurgayalu · Gandhinagar, Bowenpally · Didn’t request this? Safely ignore this email.
+    </div>
+  </div>
+</div>`;
+  return { subject, textContent, htmlContent };
+}
+
 export async function emailAuth(request, env, path, reply) {
   if (request.method !== 'POST') return reply({error:'Method not allowed'},405);
   if (request.headers.get('Origin') !== new URL(request.url).origin) return reply({error:'Invalid origin'},403);
@@ -54,11 +97,12 @@ export async function emailAuth(request, env, path, reply) {
       DO UPDATE SET digest=excluded.digest,expires=excluded.expires,attempts=0,sent=excluded.sent
       WHERE otp.sent<=? RETURNING email`).bind(email,hash,now+600000,now,now-60000).first();
     if (!row) return reply({error:'Wait one minute before requesting another code'},429);
+    const mail = buildOtpEmail(code, mode, username);
     const response = await (env.sendLocalEmail ?? fetch)('https://api.brevo.com/v3/smtp/email',{
       method:'POST',
       headers:{'api-key':env.BREVO_API_KEY,'Content-Type':'application/json'},
-      body:JSON.stringify({sender:{email:env.BREVO_SENDER,name:'Manankuragayalu'},to:[{email}],
-        subject:'Your Manankuragayalu sign-in code',textContent:'Your code is '+code+'. It expires in 10 minutes.'})
+      body:JSON.stringify({sender:{email:env.BREVO_SENDER,name:'Manakurgayalu'},to:[{email}],
+        subject:mail.subject,textContent:mail.textContent,htmlContent:mail.htmlContent})
     }).catch(() => null);
     if (response?.ok) return reply({ok:true});
     await db.prepare('UPDATE otp SET expires=0 WHERE email=? AND digest=?').bind(email,hash).run();

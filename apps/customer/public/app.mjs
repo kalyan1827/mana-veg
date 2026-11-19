@@ -134,13 +134,25 @@ get('cart-continue').onclick=()=>{
   checkout.scrollIntoView({block:'start'});
   checkout.elements.address.focus({preventScroll:true});
 };
-function productPhotoUrl(id) {
-  const demoPhoto=catalog.demo && /^[a-z-]+-\d+(?:g|kg)$/.test(id);
-  return '/api/photos/'+encodeURIComponent(id)+(demoPhoto ? '?demo=1' : '');
+const staticProducePhotos=new Set([
+  'aalu','beans','beetroot','bendakaya','black-mirchi','black-vankaya',
+  'cabbage','capsicum','carrot','cauliflower','chamagada','chikudukaya',
+  'dondakaya','kira','munakaya','onion','podugu-vankaya','sweet-potato',
+  'tomato','white-mirchi','white-vankaya'
+]);
+function productPhotoUrl(product) {
+  if(!product) return '';
+  const photo = typeof product === 'object' ? (product.photo || product.id) : product;
+  const slug = String(photo).replace(/-(?:250g|500g|1kg)$/, '').toLowerCase();
+  if (staticProducePhotos.has(slug)) {
+    return '/photos/' + slug + '.jpg';
+  }
+  const id = typeof product === 'object' ? product.id : product;
+  return '/api/photos/' + encodeURIComponent(id);
 }
 function drawCart() {
   const count=[...cart.values()].reduce((sum,item)=>sum+item.quantity,0);
-  get('cart-count').textContent=count ? '('+count+')' : '';
+  get('cart-count').textContent=count ? String(count) : '';
   updateCartBar();
   for(const button of document.querySelectorAll('.add-to-cart')) {
     refreshCartButtons.get(button)?.();
@@ -156,8 +168,9 @@ function drawCart() {
     const thumbnail=node('div','','cart-thumbnail');
     if(product.has_photo) {
       const image=node('img','');
-      image.alt='';
-      image.src=productPhotoUrl(product.id);
+      image.alt=product.name;
+      image.decoding='async';
+      image.src=productPhotoUrl(product);
       image.onerror=()=>image.remove();
       thumbnail.append(image);
     }
@@ -185,11 +198,23 @@ function drawCart() {
     row.append(thumbnail,details,controls);
     return row;
   });
+  const itemsWrap=node('div','','cart-items-card');
+  itemsWrap.append(...rows);
+  const billWrap=node('div','','bill-summary-card');
+  billWrap.append(node('h2','Bill summary'));
   const breakdown=node('dl','','cart-breakdown');
-  for(const [label,value] of [['Subtotal',subtotal()],...(coupon ? [['Coupon',-coupon.discount]] : []),['Delivery',deliveryFee()],['Total',payable()]]) {
-    breakdown.append(node('dt',label),node('dd',label==='Delivery' && value===0 ? 'Free' : money(value)));
+  for(const [label,value] of [['Subtotal',subtotal()],...(coupon ? [['Coupon ('+coupon.code+')',-coupon.discount]] : []),['Delivery',deliveryFee()],['Total payable',payable()]]) {
+    const dt=node('dt',label);
+    const dd=node('dd',label==='Delivery' && value===0 ? 'FREE' : money(value));
+    if(label==='Delivery' && value===0) dd.className='free-pill';
+    if(value<0) dd.className='savings-value';
+    breakdown.append(dt,dd);
   }
-  get('cart').replaceChildren(...rows,breakdown,node('p','Free delivery on subtotals above '+money(catalog.freeDeliveryThreshold)+' after discounts.'));
+  const thresholdNote=node('p',deliveryFee()===0
+    ? '✓ Free delivery unlocked on this order!'
+    : 'Free delivery on subtotals above '+money(catalog.freeDeliveryThreshold)+' after discounts.','bill-note');
+  billWrap.append(breakdown,thresholdNote);
+  get('cart').replaceChildren(itemsWrap,billWrap);
 }
 function productCards(products) {
   const groups = new Map();
@@ -205,17 +230,24 @@ function productCard(variants) {
   const card=node('article','','card');
   card.classList.add('produce-card');
   const media=node('div','','product-media');
-  const placeholder=node('span','Photo unavailable');
-  media.append(placeholder);
   const photoVariant=variants.find(option=>option.has_photo);
   if(photoVariant) {
     const image=document.createElement('img');
-    image.src=productPhotoUrl(photoVariant.id);
     image.alt=product.name;
-    image.loading='lazy';
-    image.addEventListener('load',()=>{placeholder.hidden=true;});
-    image.addEventListener('error',()=>{image.hidden=true; placeholder.hidden=false;});
+    image.decoding='async';
+    image.src=productPhotoUrl(photoVariant);
+    image.onerror=()=>{
+      if(!image.dataset.retried) {
+        image.dataset.retried='1';
+        image.src='/api/photos/'+encodeURIComponent(photoVariant.id);
+        return;
+      }
+      image.remove();
+      media.append(node('span','Photo unavailable'));
+    };
     media.append(image);
+  } else {
+    media.append(node('span','Photo unavailable'));
   }
   card.append(media);
   const tags=JSON.parse(product.tags ?? '[]').sort((a,b)=>Number(b==="Today's special")-Number(a==="Today's special"));
@@ -274,7 +306,10 @@ function drawProductResults(container,products,search) {
     [node('p',query ? 'No products found.' : 'No products available yet.')]));
 }
 function drawShop() {
-  if(catalog) drawProductResults(get('products'),catalog.products,get('shop-search').value);
+  if(!catalog) return;
+  const query=get('shop-search').value.trim();
+  const list=query ? catalog.products : catalog.products.filter(product=>product.category==='Vegetables');
+  drawProductResults(get('products'),list.length ? list : catalog.products,query);
 }
 function drawCategory() {
   if(!catalog) return;
@@ -308,7 +343,13 @@ document.addEventListener('visibilitychange',()=>{
 });
 function showProfile(current) {
   profile=current;
-  get('account').textContent=profile ? profile.email : 'Sign in to manage your profile and orders.';
+  const displayName=profile ? (profile.name || (profile.username ? '@'+profile.username : 'My profile')) : 'Welcome!';
+  get('profile-name').textContent=displayName;
+  get('profile-avatar').textContent=(profile ? (profile.name || profile.username || profile.email) : 'M').trim().charAt(0).toUpperCase() || 'M';
+  const badge=get('profile-badge');
+  badge.textContent=profile ? (profile.username ? '@'+profile.username : 'Signed in') : 'Guest';
+  badge.classList.toggle('signed-in',Boolean(profile));
+  get('account').textContent=profile ? profile.email : 'Sign in to save your delivery details and track orders.';
   get('logout').hidden=!profile;
   get('profile-signin').hidden=Boolean(profile);
   get('checkout-signin').hidden=Boolean(profile);
@@ -316,7 +357,7 @@ function showProfile(current) {
   profileForm.hidden=!profile;
   get('use-saved').disabled=!profile?.address;
   for(const field of ['username','name','phone','address','lat','lon']) profileForm.elements[field].value=profile?.[field] ?? '';
-  get('profile-location-status').textContent=profile?.lat!=null && profile?.lon!=null ? 'Delivery location saved.' : '';
+  get('profile-location-status').textContent=profile?.lat!=null && profile?.lon!=null ? 'Delivery location saved.' : 'Pin your GPS location for 1-tap checkout.';
 }
 async function loadProfile() {
   try { showProfile((await api('profile')).profile); }
@@ -420,43 +461,63 @@ function locate(buttonId,form,status,onSuccess) {
 }
 async function checkDelivery(form,status,copyToCheckout=false) {
   const point=coordinates(form);
+  const el=get(status);
+  el.classList.remove('status-ok','status-error');
   try {
-    const {eligible}=await api('delivery/check',point);
+    const {eligible,distanceKm}=await api('delivery/check',point);
     const current=coordinates(form);
     if(point.lat!==current.lat || point.lon!==current.lon) return;
-    get(status).textContent=eligible ? 'Delivery available.' : 'Outside the delivery area.';
+    const dist=Number.isFinite(distanceKm) ? ` (${distanceKm.toFixed(1)} km from Bowenpally)` : '';
+    el.textContent=eligible ? '✓ Delivery available'+dist : 'Outside our 20 km delivery area'+dist+'.';
+    el.classList.add(eligible ? 'status-ok' : 'status-error');
     if(copyToCheckout && eligible) {
       checkout.elements.lat.value=point.lat;
       checkout.elements.lon.value=point.lon;
-      get('delivery-status').textContent='Delivery available at the checked location.';
+      const checkoutStatus=get('delivery-status');
+      checkoutStatus.textContent='✓ Delivery available'+dist;
+      checkoutStatus.classList.remove('status-error');
+      checkoutStatus.classList.add('status-ok');
     }
-  } catch(error) {get(status).textContent=error.message;}
+  } catch(error) {
+    el.textContent=error.message;
+    el.classList.add('status-error');
+  }
 }
 const preview=get('delivery-preview');
 preview.onsubmit=event=>event.preventDefault();
 locate('preview-locate',preview,'preview-status',()=>checkDelivery(preview,'preview-status',true));
 locate('locate',checkout,'delivery-status',()=>checkDelivery(checkout,'delivery-status'));
-locate('profile-locate',profileForm,'profile-location-status',()=>{
-  get('profile-location-status').textContent='Location selected. Save your profile to keep it.';
+locate('profile-locate',profileForm,'profile-location-status',async()=>{
+  await checkDelivery(profileForm,'profile-location-status');
+  const status=get('profile-location-status');
+  status.textContent+=' Save your profile to keep it.';
 });
 checkout.elements.coupon.oninput=()=>{
   coupon=undefined;
-  get('coupon-status').textContent='';
+  const status=get('coupon-status');
+  status.textContent='';
+  status.classList.remove('status-ok','status-error');
   drawCart();
 };
 get('apply-coupon').onclick=async event=>{
   if(!profile) return signInFrom('cart');
   const button=event.currentTarget;
+  const status=get('coupon-status');
   const code=checkout.elements.coupon.value;
   const amount=subtotal();
+  status.classList.remove('status-ok','status-error');
   button.disabled=true;
   try {
     const quote=await api('coupons/quote',{code,items:[...cart.values()].map(({product,quantity})=>({id:product.id,quantity}))});
     if(code!==checkout.elements.coupon.value || amount!==subtotal() || !profile) return;
     coupon=quote;
-    get('coupon-status').textContent=quote.code+' applied';
+    status.textContent='✓ '+quote.code+' applied — saved '+money(quote.discount);
+    status.classList.add('status-ok');
     drawCart();
-  } catch(error) { get('coupon-status').textContent=error.message; }
+  } catch(error) {
+    status.textContent=error.message;
+    status.classList.add('status-error');
+  }
   finally { button.disabled=false; }
 };
 bind('checkout',async data=>{
@@ -478,13 +539,39 @@ bind('checkout',async data=>{
     showProfile(null);
     return signInFrom('cart');
   }
+  const orderedLines=[...cart.values()].map(({product,quantity})=>`• ${product.name} (${product.unit}) × ${quantity} = ${money(product.price*quantity)}`);
+  const slotLabel=checkout.elements.slot.selectedOptions[0]?.textContent || order.slot;
+  const appliedCoupon=coupon;
   cart.clear();
   coupon=undefined;
   checkout.elements.coupon.value='';
   get('coupon-status').textContent='';
   pending=null;
   drawCart();
-  get('receipt').textContent='Order placed · '+result.order.id+' · '+money(result.order.total);
+  const shortId=String(result.order.id).slice(0,8).toUpperCase();
+  const adminWa=catalog?.adminWhatsApp || '919398750721';
+  const waText=[
+    `*Manankuragayalu — New Order #${shortId}*`,
+    `Order ID: ${result.order.id}`,
+    `Phone: ${order.phone}`,
+    `Delivery Slot: ${slotLabel}`,
+    '',
+    '*Ordered Items:*',
+    ...orderedLines,
+    ...(appliedCoupon ? ['', `Coupon: ${appliedCoupon.code} (-${money(appliedCoupon.discount)})`] : []),
+    '',
+    `*Total Payable on Delivery: ${money(result.order.total)}*`,
+    `Address: ${order.address}`
+  ].join('\n');
+  const waLink=node('a','Send order on WhatsApp','wa-btn');
+  waLink.href='https://wa.me/'+adminWa+'?text='+encodeURIComponent(waText);
+  waLink.target='_blank';
+  waLink.rel='noopener noreferrer';
+  get('receipt').replaceChildren(
+    node('span','Order placed · '+result.order.id+' · '+money(result.order.total)),
+    ' ',
+    waLink
+  );
   loadCatalog().catch(error=>notice(error.message));
 });
 async function loadOrders(offset=0) {
@@ -500,11 +587,23 @@ async function loadOrders(offset=0) {
   try {
     const result=await api('orders?offset='+offset);
     if(request!==orderRequest) return;
+    const adminWa=catalog?.adminWhatsApp || '919398750721';
     const cards=result.orders.map(order=>{
-      const card=node('article','','card');
+      const card=node('article','','card order-card');
       const status={Placed:'Awaiting acceptance',Confirmed:'Accepted',Rejected:'Rejected'}[order.status] ?? order.status;
-      card.append(node('strong',status,'badge'),node('p',new Date(order.created).toLocaleDateString('en-IN',{timeZone:'Asia/Kolkata'})+' · '+money(order.total)),
-        node('p',JSON.parse(order.items).map(item=>item.name+' × '+item.quantity).join(', ')),node('p',order.slot_label),node('small','Order '+order.id));
+      const shortId=String(order.id).slice(0,8).toUpperCase();
+      const head=node('div','','order-card-head');
+      const badge=node('strong',status,'badge order-status-'+(order.status || '').toLowerCase());
+      head.append(badge,node('strong',money(order.total),'order-card-total'));
+      const meta=node('p',new Date(order.created).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Kolkata'})+' · '+order.slot_label,'order-card-meta');
+      const itemsText=node('p',JSON.parse(order.items).map(item=>item.name+' ('+item.unit+') × '+item.quantity).join(', '),'order-card-items');
+      const foot=node('div','','order-card-foot');
+      const waLink=node('a','WhatsApp store','wa-btn');
+      waLink.href='https://wa.me/'+adminWa+'?text='+encodeURIComponent(`Hi Manakurgayalu, regarding Order #${shortId} (${order.id})`);
+      waLink.target='_blank';
+      waLink.rel='noopener noreferrer';
+      foot.append(node('small','Order #'+shortId),waLink);
+      card.append(head,meta,itemsText,foot);
       return card;
     });
     if(offset) history.append(...cards);

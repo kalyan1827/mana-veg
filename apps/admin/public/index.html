@@ -1,13 +1,35 @@
-<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Store admin | Manankuragayalu</title><link rel="stylesheet" href="/style.css"><body><header><strong>Manankuragayalu</strong><nav hidden aria-label="Main navigation"><a href="#home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10l9-7 9 7v10H3z M9 20v-6h6v6"/></svg>Home</a><a href="#catalog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"/></svg>Catalog</a><a href="#bookings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z M9 8h6 M9 12h6"/></svg>Bookings</a><a href="#offers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h8l10 10-7 7L4 11z M8 8h.01"/></svg>Offers</a><a href="#profile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a5 5 0 0 0-5-5H9a5 5 0 0 0-5 5v2 M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0"/></svg>Profile</a></nav></header><main>
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#ffffff"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><title>Store Admin | Manakurgayalu</title><link rel="manifest" href="/manifest.webmanifest"><link rel="icon" type="image/jpeg" href="/logo.jpg"><link rel="apple-touch-icon" href="/logo.jpg"><link rel="stylesheet" href="/style.css"><body><header><a class="brand" href="#home"><img src="/logo.jpg" alt="Manakurgayalu logo" width="44" height="44"><span><strong>Manakurgayalu</strong><small>Store Admin</small></span></a><nav hidden aria-label="Main navigation"><a href="#home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10l9-7 9 7v10H3z M9 20v-6h6v6"/></svg>Home</a><a href="#catalog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"/></svg>Catalog</a><a href="#bookings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z M9 8h6 M9 12h6"/></svg>Bookings</a><a href="#offers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h8l10 10-7 7L4 11z M8 8h.01"/></svg>Offers</a><a href="#profile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a5 5 0 0 0-5-5H9a5 5 0 0 0-5 5v2 M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0"/></svg>Profile</a></nav></header><main>
 <section id="home" hidden>
-  <h1 class="dashboard-title">Today's bookings</h1>
-  <p id="dashboard-sync" role="status"></p><dl class="dashboard-stats" aria-live="polite">
+  <div class="dashboard-header">
+    <div>
+      <h1 class="dashboard-title">Today's Overview</h1>
+      <p id="dashboard-date" class="dashboard-subtitle"></p>
+    </div>
+    <p id="dashboard-sync" class="sync-pill" role="status">Live sync active</p>
+  </div>
+  <dl class="dashboard-stats" aria-live="polite">
     <div class="dashboard-stat"><dt>Total bookings</dt><dd id="stat-total">&mdash;</dd></div>
-    <div class="dashboard-stat"><dt>Pending</dt><dd id="stat-pending">&mdash;</dd></div>
-    <div class="dashboard-stat"><dt>Accepted</dt><dd id="stat-accepted">&mdash;</dd></div>
-    <div class="dashboard-stat"><dt>Delivered</dt><dd id="stat-delivered">&mdash;</dd></div>
+    <div class="dashboard-stat stat-pending"><dt>Pending</dt><dd id="stat-pending">&mdash;</dd></div>
+    <div class="dashboard-stat stat-accepted"><dt>Accepted</dt><dd id="stat-accepted">&mdash;</dd></div>
+    <div class="dashboard-stat stat-delivered"><dt>Delivered</dt><dd id="stat-delivered">&mdash;</dd></div>
     <div class="dashboard-stat dashboard-revenue"><dt>Today's revenue</dt><dd id="stat-revenue">&mdash;</dd></div>
   </dl>
+  <div class="dashboard-shortcuts" aria-label="Quick actions">
+    <a class="dash-shortcut" href="#catalog"><strong>+ Add Vegetable</strong><span>Publish or update prices</span></a>
+    <a class="dash-shortcut" href="#bookings"><strong>All Bookings</strong><span>Accept, reject &amp; deliver</span></a>
+    <a class="dash-shortcut" href="#offers"><strong>Offers &amp; Coupons</strong><span>Free delivery &amp; codes</span></a>
+    <a class="dash-shortcut dash-shortcut-shop" href="https://shop.manakuragayalu.workers.dev" target="_blank" rel="noopener noreferrer"><strong>Open Live Shop ↗</strong><span>View customer storefront</span></a>
+  </div>
+  <div class="dashboard-grid">
+    <section class="panel dashboard-panel">
+      <div class="panel-head"><h2>Active bookings today</h2><a href="#bookings">View all</a></div>
+      <div id="dashboard-active"><p class="muted">Loading bookings…</p></div>
+    </section>
+    <section class="panel dashboard-panel">
+      <div class="panel-head"><h2>Catalog &amp; stock health</h2><a href="#catalog">Manage</a></div>
+      <div id="dashboard-stock"><p class="muted">Loading catalog…</p></div>
+    </section>
+  </div>
 </section>
 <section id="catalog" class="panel" hidden><h2>Vegetable catalog</h2><form id="publish"><div class="product-basics"><label class="upload-tile"><input name="photo" type="file" accept="image/jpeg,image/png,image/webp"><img id="upload-preview" alt="" hidden><span id="upload-caption">Upload product photo</span></label><div class="product-identity"><label>Name<input name="name" required maxlength="100"></label><div class="category-picker"><span id="category-label">Category</span><details id="category-picker"><summary id="category-current" aria-labelledby="category-label category-current">Vegetables</summary><div id="categories"></div></details><input type="hidden" name="category"></div></div></div><div class="category-picker"><span id="pricing-label">Pricing method</span><details id="pricing-picker"><summary id="pricing-current" aria-labelledby="pricing-label pricing-current">By kilogram</summary><div class="picker-options"><button type="button" data-pricing="weight">By kilogram</button><button type="button" data-pricing="fixed">Fixed pack</button></div></details><input type="hidden" name="pricing" value="weight"></div><label id="fixed-unit" hidden>Pack size<input name="unit" placeholder="6 eggs" maxlength="40"></label><label id="price-label"><span id="price-caption">Price per kg (₹)</span><input name="price" type="text" inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?|[.][0-9]{1,2}" required></label><p id="pack-prices" aria-live="polite"></p><label id="quarter-stock">250 g packs in stock<input name="stock250" type="text" inputmode="numeric" pattern="[0-9]{1,6}" value="0" required></label><label id="half-stock">500 g packs in stock<input name="stock500" type="text" inputmode="numeric" pattern="[0-9]{1,6}" value="0" required></label><label><span id="stock-label">1 kg packs in stock</span><input name="stock" type="text" inputmode="numeric" pattern="[0-9]{1,6}" required></label><fieldset><legend>Product tags</legend>
 <label class="toggle-row"><span>Regular</span><input type="checkbox" role="switch" name="tags" value="Regular"><span class="toggle-track" aria-hidden="true"></span><span class="toggle-state" aria-hidden="true"></span></label>
@@ -53,15 +75,23 @@
   </section>
 </section>
 <section id="profile" class="account-page" hidden>
-  <h1>My profile</h1>
+  <div class="admin-profile-hero">
+    <div class="admin-avatar" aria-hidden="true">M</div>
+    <div>
+      <h1>Store admin</h1>
+      <p id="account"></p>
+    </div>
+  </div>
   <section class="panel">
-    <h2>Account details</h2>
+    <h2>Store details</h2>
     <dl class="account-details">
-      <dt>Email address</dt><dd id="account"></dd>
       <dt>Role</dt><dd>Store admin</dd>
+      <dt>Storefront</dt><dd><a href="https://shop.manakuragayalu.workers.dev" target="_blank" rel="noopener noreferrer">shop.manakuragayalu.workers.dev</a></dd>
+      <dt>Dispatch area</dt><dd>Gandhinagar, Bowenpally (20 km radius)</dd>
+      <dt>Admin WhatsApp</dt><dd>+91 9398750721</dd>
     </dl>
   </section>
-  <button id="admin-logout" type="button">Log out</button>
+  <button id="admin-logout" type="button" class="admin-logout-btn">Log out</button>
   <p id="logout-error" class="field-error" role="status"></p>
 </section>
 <section id="admin-login" class="panel account-page" aria-labelledby="admin-login-title" hidden>

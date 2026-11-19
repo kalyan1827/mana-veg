@@ -1,26 +1,86 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Manankuragayalu</title><link rel="stylesheet" href="/style.css"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#ffffff"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><title>Manakurgayalu</title><link rel="manifest" href="/manifest.webmanifest"><link rel="icon" type="image/jpeg" href="/logo.jpg"><link rel="apple-touch-icon" href="/logo.jpg"><link rel="stylesheet" href="/style.css"></head>
 <body>
-<header><strong>Manankuragayalu</strong><nav hidden aria-label="Shop navigation"><a href="#home"><svg class="footer-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-7 9 7v10H3z M9 20v-6h6v6"></path></svg>Home</a><a href="#categories"><svg class="footer-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"></path></svg>Categories</a><a href="#cart"><svg class="footer-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h3l3 12h11l3-8H6 M9 20h.01 M18 20h.01"></path></svg>Cart <span id="cart-count"></span></a><a href="#orders"><svg class="footer-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z M9 8h6 M9 12h6"></path></svg>Orders</a><a href="#profile"><svg class="footer-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a5 5 0 0 0-5-5H9a5 5 0 0 0-5 5v2 M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0"></path></svg>Profile</a></nav></header>
+<header><a class="brand" href="#home"><img src="/logo.jpg" alt="Manakurgayalu logo" width="44" height="44"><span><strong>Manakurgayalu</strong><small>Fresh local vegetables</small></span></a><nav hidden aria-label="Shop navigation"><a href="#home"><svg class="footer-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-7 9 7v10H3z M9 20v-6h6v6"></path></svg>Home</a><a href="#categories"><svg class="footer-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"></path></svg>Categories</a><a href="#cart"><svg class="footer-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h3l3 12h11l3-8H6 M9 20h.01 M18 20h.01"></path></svg>Cart <span id="cart-count"></span></a><a href="#orders"><svg class="footer-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z M9 8h6 M9 12h6"></path></svg>Orders</a><a href="#profile"><svg class="footer-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a5 5 0 0 0-5-5H9a5 5 0 0 0-5 5v2 M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0"></path></svg>Profile</a></nav></header>
 <main>
 <output id="notice" aria-live="polite"></output>
 <section data-page="home" hidden><div class="hero"><p class="badge">Bowenpally delivery · under 20 km</p><h1>Fresh vegetables & everyday essentials</h1><a href="#delivery">Check delivery</a></div><div class="shop-search"><input id="shop-search" type="search" aria-label="Search vegetables and groceries" placeholder="Search vegetables and groceries"></div><h2>Shop all products</h2><p id="catalog-mode" hidden>Demo catalog · sample prices and stock</p><div id="products" class="grid"></div></section>
-<section data-page="delivery" hidden><h1>Check delivery</h1><p>We deliver to addresses less than 20 km from our dispatch location.</p>
-<form id="delivery-preview" class="panel"><input type="hidden" name="lat"><input type="hidden" name="lon">
-<div class="actions"><button type="button" id="preview-locate">Use my current location</button></div><p id="preview-status" role="status"></p><a href="#home">Back to shopping</a></form></section>
-<section data-page="categories" hidden><h1>Categories</h1><div class="shop-search"><input id="category-search" type="search" aria-label="Search this category" placeholder="Search this category"></div><div id="category-filter" class="actions"></div><h2 id="category-title">Browse by category</h2><div id="category-products" class="grid"></div></section>
-<section data-page="cart" hidden><h1>Your cart</h1><p id="receipt" aria-live="polite"></p><div id="cart"></div>
-  <div id="empty-cart" class="empty-state" hidden>
-    <span class="empty-state-emoji" aria-hidden="true">😕</span>
-    <p>Your cart is empty.</p>
-    <a id="browse" href="#home">Back to shopping</a>
+<section data-page="delivery" hidden>
+  <div class="delivery-hero">
+    <p class="badge">Gandhinagar, Bowenpally · 20 km radius</p>
+    <h1>Check delivery availability</h1>
+    <p>Confirm your location is within our fresh delivery zone before you shop.</p>
   </div>
-  <form class="panel" id="checkout" hidden>
-<h2>Delivery & checkout</h2><label>Delivery address<textarea name="address" required maxlength="300"></textarea></label><label>Phone<input name="phone" type="tel" required></label>
-<input type="hidden" name="lat"><input type="hidden" name="lon">
-<button type="button" id="use-saved">Use saved address</button> <button type="button" id="locate">Use my current location</button><p id="delivery-status" aria-live="polite"></p>
-<label>Delivery slot<select name="slot" id="slots" required></select></label><label><input name="consent" type="checkbox"> Send order updates on WhatsApp when available</label><label>Coupon code<input name="coupon" maxlength="32" autocomplete="off"></label><button type="button" id="apply-coupon">Apply coupon</button><p id="coupon-status" role="status"></p><p>Payment on delivery</p><button id="place-order">Place order</button><button id="checkout-signin" type="button" hidden>Sign in to checkout</button></form></section>
+  <form id="delivery-preview" class="panel delivery-check-card">
+    <input type="hidden" name="lat"><input type="hidden" name="lon">
+    <h2>Instant GPS check</h2>
+    <p class="checkout-hint">Tap below to measure your distance from our Bowenpally dispatch hub.</p>
+    <div class="actions"><button type="button" id="preview-locate" class="cta-primary">Use my current location</button></div>
+    <p id="preview-status" class="status-banner" role="status"></p>
+    <div class="delivery-links">
+      <a class="cta-secondary" href="#home">Back to shopping</a>
+      <a class="wa-btn" href="https://wa.me/919398750721" target="_blank" rel="noopener noreferrer">Ask on WhatsApp</a>
+    </div>
+  </form>
+  <div class="delivery-info-grid">
+    <article class="card"><strong>20 km Coverage</strong><p>Fresh vegetables delivered directly from Gandhinagar, Bowenpally.</p></article>
+    <article class="card"><strong>Low Delivery Fee</strong><p>₹20 flat fee — free delivery on qualifying orders.</p></article>
+    <article class="card"><strong>Pay on Delivery</strong><p>Pay conveniently with Cash or UPI when your order arrives.</p></article>
+  </div>
+</section>
+<section data-page="categories" hidden><h1>Categories</h1><div class="shop-search"><input id="category-search" type="search" aria-label="Search this category" placeholder="Search this category"></div><div id="category-filter" class="actions"></div><h2 id="category-title">Browse by category</h2><div id="category-products" class="grid"></div></section>
+<section data-page="cart" hidden>
+  <div class="cart-page-header">
+    <h1>Your cart</h1>
+    <a class="cart-continue-link" href="#home">+ Add more items</a>
+  </div>
+  <div id="receipt" class="receipt-card" aria-live="polite"></div>
+  <div id="cart"></div>
+  <div id="empty-cart" class="empty-state" hidden>
+    <span class="empty-state-emoji" aria-hidden="true">🛒</span>
+    <p>Your cart is empty.</p>
+    <small>Add fresh vegetables and everyday essentials to get started.</small>
+    <a id="browse" href="#home">Browse fresh vegetables</a>
+  </div>
+  <form class="panel checkout-card" id="checkout" hidden>
+    <h2>Delivery &amp; checkout</h2>
+    <p class="checkout-hint">Confirm your location and delivery window to place your order.</p>
+    <div class="checkout-section">
+      <h3>1. Delivery location</h3>
+      <input type="hidden" name="lat"><input type="hidden" name="lon">
+      <div class="checkout-btn-row">
+        <button type="button" id="use-saved" class="cta-outline">Use saved address</button>
+        <button type="button" id="locate" class="cta-outline">Use my current location</button>
+      </div>
+      <p id="delivery-status" class="status-banner" aria-live="polite"></p>
+    </div>
+    <div class="checkout-section">
+      <h3>2. Address &amp; contact</h3>
+      <label>Delivery address <span class="auth-required" aria-hidden="true">*</span><textarea name="address" rows="3" required maxlength="300" placeholder="Flat / House no., street, landmark"></textarea></label>
+      <label>Mobile number <span class="auth-required" aria-hidden="true">*</span><input name="phone" type="tel" required placeholder="10-digit mobile number"></label>
+    </div>
+    <div class="checkout-section">
+      <h3>3. Delivery slot</h3>
+      <label>Choose delivery window<select name="slot" id="slots" required></select></label>
+      <label class="consent-row"><input name="consent" type="checkbox"> <span>Send order updates on WhatsApp when available</span></label>
+    </div>
+    <div class="checkout-section">
+      <h3>4. Coupon code</h3>
+      <div class="coupon-row">
+        <input name="coupon" maxlength="32" autocomplete="off" aria-label="Coupon code" placeholder="Enter coupon code">
+        <button type="button" id="apply-coupon" class="cta-outline">Apply</button>
+      </div>
+      <p id="coupon-status" class="status-banner" role="status"></p>
+    </div>
+    <div class="payment-banner">
+      <strong>Payment on delivery</strong>
+      <span>Pay via Cash or UPI when your fresh produce arrives.</span>
+    </div>
+    <button id="place-order" class="cta-primary">Place order</button>
+    <button id="checkout-signin" type="button" class="cta-primary" hidden>Sign in to checkout</button>
+  </form>
+</section>
 <section data-page="orders" hidden>
   <h1>My orders</h1>
   <div id="history" aria-live="polite"></div>
@@ -32,23 +92,61 @@
   <button id="more-orders" hidden>Load more orders</button>
 </section>
 <section data-page="profile" hidden>
-  <h1>My profile</h1>
-  <p id="account"></p>
-  <button id="profile-signin" type="button" hidden>Sign in or create an account</button>
+  <div class="profile-hero">
+    <div class="profile-avatar" id="profile-avatar" aria-hidden="true">M</div>
+    <div class="profile-summary">
+      <div class="profile-heading">
+        <h1 id="profile-name">My profile</h1>
+        <span class="profile-pill" id="profile-badge">Guest</span>
+      </div>
+      <p id="account"></p>
+    </div>
+  </div>
+  <button id="profile-signin" type="button" class="profile-primary" hidden>Sign in or create an account</button>
+  <div class="profile-menu-card" aria-label="Quick actions">
+    <a class="profile-row" href="#orders">
+      <span class="profile-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z M9 8h6 M9 12h6"/></svg></span>
+      <span class="profile-row-body"><strong>My Orders</strong><span>Track status &amp; order history</span></span>
+      <span class="profile-row-chevron" aria-hidden="true">›</span>
+    </a>
+    <a class="profile-row" href="#delivery">
+      <span class="profile-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.3-6-10a6 6 0 1 1 12 0c0 4.7-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/></svg></span>
+      <span class="profile-row-body"><strong>Delivery Check</strong><span>Within 20 km of Bowenpally</span></span>
+      <span class="profile-row-chevron" aria-hidden="true">›</span>
+    </a>
+    <a class="profile-row profile-row-wa" href="https://wa.me/919398750721" target="_blank" rel="noopener noreferrer">
+      <span class="profile-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 20l1.2-4.8A8.5 8.5 0 1 1 21 11.5z"/></svg></span>
+      <span class="profile-row-body"><strong>WhatsApp Us</strong><span>+91 9398750721 · Quick support</span></span>
+      <span class="profile-row-chevron" aria-hidden="true">›</span>
+    </a>
+  </div>
   <form id="profile-form" class="panel" hidden>
-    <h2>Personal details</h2>
-    <label>Username <span class="auth-required" aria-hidden="true">*</span><input name="username" autocomplete="username" pattern="[a-zA-Z0-9_]{3,24}" maxlength="24" required title="3-24 letters, digits or underscores"></label>
-    <label>Full name <span class="auth-required" aria-hidden="true">*</span><input name="name" maxlength="100" autocomplete="name" required></label>
-    <label>Phone<input name="phone" type="tel" autocomplete="tel"></label>
-    <label>Default delivery address<textarea name="address" maxlength="300" autocomplete="street-address"></textarea></label>
+    <h2>Personal &amp; delivery details</h2>
+    <p class="profile-hint">Saved details auto-fill during checkout for faster ordering.</p>
+    <div class="profile-grid">
+      <label>Username <span class="auth-required" aria-hidden="true">*</span><input name="username" autocomplete="username" pattern="[a-zA-Z0-9_]{3,24}" maxlength="24" required title="3-24 letters, digits or underscores"></label>
+      <label>Full name <span class="auth-required" aria-hidden="true">*</span><input name="name" maxlength="100" autocomplete="name" required></label>
+    </div>
+    <label>Mobile number<input name="phone" type="tel" autocomplete="tel" placeholder="10-digit mobile number"></label>
+    <label>Default delivery address<textarea name="address" rows="3" maxlength="300" autocomplete="street-address" placeholder="House/Flat no., street, landmark"></textarea></label>
     <input type="hidden" name="lat"><input type="hidden" name="lon">
-    <button type="button" id="profile-locate">Use my current location</button>
-    <p id="profile-location-status" role="status"></p>
-    <button type="submit">Save profile</button>
+    <div class="profile-location-box">
+      <button type="button" id="profile-locate">Use my current location</button>
+      <p id="profile-location-status" role="status"></p>
+    </div>
+    <button type="submit" class="profile-primary">Save profile</button>
     <p id="profile-save-status" role="status"></p>
   </form>
-  <details class="panel" id="support"><summary>Support</summary><p>Check delivery availability from Cart. For an existing booking, open Orders to find its reference and status.</p></details>
-  <button id="logout" type="button" hidden>Log out</button>
+  <section class="panel profile-support" id="support">
+    <h2>Store &amp; support</h2>
+    <dl class="profile-info-list">
+      <div><dt>Store</dt><dd>Manankuragayalu · Gandhinagar, Bowenpally</dd></div>
+      <div><dt>Delivery</dt><dd>Under 20 km · Payment on delivery</dd></div>
+      <div><dt>Email</dt><dd>manaveg083@gmail.com</dd></div>
+    </dl>
+    <a class="wa-btn" href="https://wa.me/919398750721" target="_blank" rel="noopener noreferrer">Contact Manankuragayalu on WhatsApp (+91 9398750721)</a>
+  </section>
+  <button id="logout" type="button" class="profile-logout" hidden>Log out</button>
 </section>
 <section data-page="welcome" aria-labelledby="auth-title" hidden>
   <a id="auth-back" href="#home">Back to shopping</a>

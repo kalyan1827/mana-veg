@@ -1,0 +1,17 @@
+{
+  "name": "Manakurgayalu — Fresh Vegetables",
+  "short_name": "Manakurgayalu",
+  "start_url": "/#home",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
+

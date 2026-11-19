@@ -8,11 +8,11 @@ function privateResponse(body, status = 200, headers = {}) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const path = new URL(request.url).pathname;
     if (path === '/api/auth/logout' && request.method === 'POST') {
-      if (request.headers.get('Origin') !== new URL(request.url).origin) return privateResponse({error:'Invalid origin'},403);
-      return privateResponse({ok:true},200,{'Set-Cookie':await revokeSession(env.DB,request)});
+      if (request.headers.get('Origin') !== new URL(request.url).origin) return privateResponse({ error: 'Invalid origin' }, 403);
+      return privateResponse({ ok: true }, 200, { 'Set-Cookie': await revokeSession(env.DB, request) });
     }
     if (path === '/api/auth/otp/request' || path === '/api/auth/otp/verify') return emailAuth(request, env, path, privateResponse);
     if (path === '/api/delivery/check' && request.method === 'POST') {
@@ -28,7 +28,7 @@ export default {
         return privateResponse({ error: error.message }, 400);
       }
     }
-    const shopResponse = await shopRoutes(request, env.DB, path, privateResponse, env.PHOTOS, env.DEMO_CATALOG === true);
+    const shopResponse = await shopRoutes(request, env.DB, path, privateResponse, env.PHOTOS, env.DEMO_CATALOG === true, env, ctx);
     if (shopResponse) return shopResponse;
     if (request.method !== 'GET') return privateResponse({ error: 'Method not allowed' }, 405);
     if (path === '/api/health') return privateResponse({ ok: true });
@@ -49,8 +49,8 @@ export default {
     const offset = Number(new URL(request.url).searchParams.get('offset') ?? 0);
     if (!Number.isSafeInteger(offset) || offset < 0) return privateResponse({ error: 'Invalid order offset' }, 400);
     const orders = await env.DB.prepare('SELECT ' + fields + ' FROM orders WHERE email=? ORDER BY created DESC,id DESC LIMIT 51 OFFSET ?')
-      .bind(session.email,offset).all();
-    return privateResponse({ orders: orders.results.slice(0,50), nextOffset: orders.results.length > 50 ? offset + 50 : null });
+      .bind(session.email, offset).all();
+    return privateResponse({ orders: orders.results.slice(0, 50), nextOffset: orders.results.length > 50 ? offset + 50 : null });
   }
 };
 

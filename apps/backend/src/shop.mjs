@@ -1,9 +1,10 @@
 import { deliveryEligibility } from './delivery.mjs';
 import { readSession, renewCustomerCookie } from './sessions.mjs';
 import { validUsername } from './auth.mjs';
+import { notifyOrderPlaced, notifyOrderDecision } from './notifications.mjs';
 
 const idPattern = /^[a-zA-Z0-9-]{1,80}$/;
-const orderFields = 'id,address,phone,slot_label,items,fee,total,status,collected,created';
+const orderFields = 'id,address,phone,slot_label,items,fee,total,status,collected,created,coupon_code,coupon_discount';
 const getRows = async statement => (await statement.all()).results;
 const couponAudiences = [
   {id:'everyone',label:'Everyone',default:true},
@@ -12,7 +13,7 @@ const couponAudiences = [
 ];
 const catalogTags = new Set(['Regular',"Today's special",'Leafy vegetables','Seasonal','Fruit']);
 
-export async function shopRoutes(request, db, path, reply, photos, demo = false) {
+export async function shopRoutes(request, db, path, reply, photos, demo = false, env = null, ctx = null) {
   const method = request.method;
   if (path === '/api/profile' && ['GET','POST'].includes(method)) {
     const session = await readSession(db, request);
@@ -57,12 +58,13 @@ export async function shopRoutes(request, db, path, reply, photos, demo = false)
     } }) : reply({ error: 'Photo not found' }, 404);
   }
   if (path === '/api/catalog' && method === 'GET') {
-    const products = await getRows(db.prepare(`SELECT p.id,p.name,p.unit,p.price,p.stock,p.pack_group,p.kilo_price,p.tags,p.original_price,p.photo IS NOT NULL AS has_photo,c.name AS category
-      FROM products p JOIN categories c ON c.id=p.category WHERE p.active=1 ORDER BY c.name,p.name LIMIT 250`));
+    const products = await getRows(db.prepare(`SELECT p.id,p.name,p.unit,p.price,p.stock,p.pack_group,p.kilo_price,p.tags,p.original_price,p.photo,p.photo IS NOT NULL AS has_photo,c.name AS category
+      FROM products p JOIN categories c ON c.id=p.category WHERE p.active=1
+      ORDER BY CASE WHEN p.category='vegetables' THEN 0 ELSE 1 END, c.name, p.name LIMIT 250`));
     const slots = await getRows(db.prepare('SELECT id,label FROM slots WHERE cutoff>? AND booked<capacity ORDER BY cutoff LIMIT 30').bind(Date.now()));
     const settings = await db.prepare('SELECT fee,free_delivery_threshold FROM settings WHERE id=1').first();
-    const categories = await getRows(db.prepare('SELECT name FROM categories ORDER BY name'));
-    return reply({ products, categories, slots, fee: settings.fee, freeDeliveryThreshold:settings.free_delivery_threshold, demo });
+    const categories = await getRows(db.prepare("SELECT name FROM categories ORDER BY CASE WHEN id='vegetables' THEN 0 ELSE 1 END, name"));
+    return reply({ products, categories, slots, fee: settings.fee, freeDeliveryThreshold:settings.free_delivery_threshold, adminWhatsApp: env?.ADMIN_WHATSAPP || '919398750721', demo });
   }
   const admin = path.startsWith('/api/admin/');
   const checkout = path === '/api/orders' && method === 'POST';
@@ -74,7 +76,7 @@ export async function shopRoutes(request, db, path, reply, photos, demo = false)
   const session = await readSession(db, request);
   if (!session) return reply({ error: 'Sign in required' }, 401);
   if (session.role !== (admin ? 'admin' : 'customer')) return reply({ error: 'Access denied' }, 403);
-  if (checkout) return createOrder(request, db, session.email, reply);
+  if (checkout) return createOrder(request, db, session.email, reply, env, ctx);
   if(path==='/api/admin/delivery-offer' && method==='GET') {
     const settings=await db.prepare('SELECT free_delivery_threshold AS threshold FROM settings WHERE id=1').first();
     return reply(settings);
@@ -154,16 +156,21 @@ export async function shopRoutes(request, db, path, reply, photos, demo = false)
   const decisionId = /^\/api\/admin\/orders\/([a-zA-Z0-9-]{1,80})\/decision$/.exec(path)?.[1];
   if (decisionId && method === 'POST') {
     const input = await request.json().catch(() => null);
+    const decisionFields = 'id,email,address,phone,slot_label,items,fee,total,coupon_code,coupon_discount,status';
     if (input?.action === 'deliver') {
       const order = await db.prepare(`UPDATE orders SET status='Delivered', delivered_at=?, decision_actor=?
-        WHERE id=? AND status='Confirmed' RETURNING id,status`).bind(Date.now(),session.email,decisionId).first();
-      return order ? reply({ order }) : reply({ error: 'Only an accepted booking can be marked delivered' },409);
+        WHERE id=? AND status='Confirmed' RETURNING ${decisionFields}`).bind(Date.now(),session.email,decisionId).first();
+      if (!order) return reply({ error: 'Only an accepted booking can be marked delivered' },409);
+      await notifyOrderDecision(env, ctx, order);
+      return reply({ order: { id: order.id, status: order.status } });
     }
     if (!['accept','reject'].includes(input?.action)) return reply({ error: 'Choose Accept or Reject' }, 400);
     const status = input.action === 'accept' ? 'Confirmed' : 'Rejected';
     const order = await db.prepare(`UPDATE orders SET status=?, decision_actor=?
-      WHERE id=? AND status='Placed' RETURNING id,status`).bind(status,session.email,decisionId).first();
-    return order ? reply({ order }) : reply({ error: 'This booking is no longer awaiting a decision' }, 409);
+      WHERE id=? AND status='Placed' RETURNING ${decisionFields}`).bind(status,session.email,decisionId).first();
+    if (!order) return reply({ error: 'This booking is no longer awaiting a decision' }, 409);
+    await notifyOrderDecision(env, ctx, order);
+    return reply({ order: { id: order.id, status: order.status } });
   }
   if (path === '/api/admin/catalog' && method === 'GET') {
     const categories = await getRows(db.prepare('SELECT id,name FROM categories ORDER BY name'));
@@ -291,7 +298,7 @@ function cartQuantities(items) {
   return quantities;
 }
 
-async function createOrder(request, db, email, reply) {
+async function createOrder(request, db, email, reply, env = null, ctx = null) {
   const input = await request.json().catch(() => null);
   const key = request.headers.get('Idempotency-Key');
   const address = typeof input?.address === 'string' ? input.address.trim() : '';
@@ -357,5 +364,9 @@ async function createOrder(request, db, email, reply) {
     }
     throw error;
   }
+  await notifyOrderPlaced(env, db, ctx, {
+    id, email, address, phone, slot_label: slotRow.label, items, fee, total,
+    coupon_code: code, coupon_discount: discount, status: 'Placed'
+  });
   return reply({ order: { id, total, status: 'Placed' } }, 201);
 }

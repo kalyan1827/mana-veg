@@ -45,8 +45,8 @@ const PHOTOS = {
   async put(id, body, { httpMetadata }) { images.set(id, { body, httpMetadata }); },
   async delete(id) { images.delete(id); }
 };
-const assets = new Map([['/','index.html'],['/style.css','style.css'],['/app.mjs','app.mjs']]);
-const mime = { 'index.html':'text/html', 'style.css':'text/css', 'app.mjs':'text/javascript' };
+const assets = new Map([['/','index.html'],['/style.css','style.css'],['/app.mjs','app.mjs'],['/logo.svg','logo.svg'],['/logo.jpg','logo.jpg'],['/manifest.webmanifest','manifest.webmanifest']]);
+const mime = { 'index.html':'text/html', 'style.css':'text/css', 'app.mjs':'text/javascript', 'logo.svg':'image/svg+xml', 'logo.jpg':'image/jpeg', 'manifest.webmanifest':'application/manifest+json' };
 for (const [app, port] of [
   ['customer',Number(process.env.CUSTOMER_PORT ?? 8787)],
   ['admin',Number(process.env.ADMIN_PORT ?? 8788)]

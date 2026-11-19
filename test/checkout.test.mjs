@@ -254,3 +254,58 @@ test('admin targets a coupon by username and checkout reserves and releases its 
   assert.equal(free.status,201);
   assert.equal((await free.json()).order.total,3000);
 });
+
+test('order placement and admin decisions trigger Manankuragayalu invoice emails', async () => {
+  const DB = localDatabase();
+  const shopper = await issueSession(DB, 'shopper@example.test');
+  const admin = await issueSession(DB, 'staff@example.test', 'admin');
+  const origin = 'https://shop.example.test';
+  const sent = [];
+  const env = {
+    DB,
+    BREVO_API_KEY: 'test',
+    BREVO_SENDER: 'manaveg083@gmail.com',
+    ADMIN_WHATSAPP: '919398750721',
+    async sendLocalEmail(_url, options) {
+      sent.push(JSON.parse(options.body));
+      return new Response(null, { status: 201 });
+    }
+  };
+  const call = (path, cookie, body, key) => backend.fetch(new Request(origin + '/api/' + path, {
+    method: 'POST',
+    headers: { Origin: origin, Cookie: cookie.split(';')[0], ...(key && { 'Idempotency-Key': key }) },
+    body: JSON.stringify(body)
+  }), env);
+
+  const created = await call('orders', shopper, {
+    address: 'Bowenpally Main Rd', phone: '9876543210', lat: 17.47, lon: 78.48,
+    slot: 'local', items: [{ id: 'tomato-1kg', quantity: 2 }], total: 8000
+  }, 'invoice-order');
+  assert.equal(created.status, 201);
+  const { order: { id } } = await created.json();
+
+  assert.equal(sent.length, 2);
+  const customerMail = sent.find(m => m.to.some(r => r.email === 'shopper@example.test'));
+  const adminMail = sent.find(m => m.to.some(r => r.email === 'staff@example.test'));
+  assert.ok(customerMail && adminMail);
+  assert.equal(customerMail.sender.name, 'Manankuragayalu');
+  assert.match(customerMail.subject, /Manankuragayalu Invoice/);
+  assert.match(customerMail.textContent, /Tomato \(1 kg\) x 2/);
+  assert.match(customerMail.textContent, /9876543210/);
+  assert.match(customerMail.textContent, /Total Payable on Delivery: ₹80\.00/);
+  assert.match(adminMail.subject, /New Order/);
+  assert.match(adminMail.textContent, /Tomato \(1 kg\) x 2/);
+
+  sent.length = 0;
+  assert.equal((await call('admin/orders/' + id + '/decision', admin, { action: 'accept' })).status, 200);
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].to[0].email, 'shopper@example.test');
+  assert.match(sent[0].subject, /Order Confirmed/);
+  assert.match(sent[0].htmlContent, /Manankuragayalu/);
+  assert.match(sent[0].htmlContent, /Tomato/);
+
+  sent.length = 0;
+  assert.equal((await call('admin/orders/' + id + '/decision', admin, { action: 'deliver' })).status, 200);
+  assert.equal(sent.length, 1);
+  assert.match(sent[0].subject, /Order Delivered/);
+});

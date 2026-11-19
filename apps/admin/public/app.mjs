@@ -17,6 +17,34 @@ function text(tag,value) {
   node.textContent = value;
   return node;
 }
+function whatsappInvoiceUrl(order) {
+  const digits = String(order.phone || '').replace(/\D/g, '');
+  if (!digits) return null;
+  const phone = digits.length === 10 ? '91' + digits : digits;
+  const items = JSON.parse(order.items || '[]');
+  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const discount = Number(order.coupon_discount || 0);
+  const fee = Number(order.fee || 0);
+  const status = { Placed: 'Order Received', Confirmed: 'Order Confirmed', Delivered: 'Order Delivered', Rejected: 'Order Rejected' }[order.status] ?? order.status;
+  const lines = [
+    '*Manankuragayalu — Order Invoice*',
+    `Status: ${status}`,
+    `Order ID: #${String(order.id).slice(0, 8).toUpperCase()}`,
+    `Delivery Slot: ${order.slot_label}`,
+    '',
+    '*Ordered Items:*',
+    ...items.map(item => `• ${item.name} (${item.unit}) × ${item.quantity} = ${money(item.price * item.quantity)}`),
+    '',
+    `Subtotal: ${money(subtotal)}`,
+    ...(discount > 0 ? [`Coupon (${order.coupon_code || 'DISCOUNT'}): -${money(discount)}`] : []),
+    `Delivery Fee: ${fee === 0 ? 'FREE' : money(fee)}`,
+    `*Total Payable on Delivery: ${money(order.total)}*`,
+    '',
+    `Address: ${order.address}`,
+    'Thank you for ordering from Manankuragayalu!'
+  ];
+  return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(lines.join('\n'));
+}
 function bookingCard(order) {
   const card = text('article','');
   card.className = 'card';
@@ -24,25 +52,34 @@ function bookingCard(order) {
   card.append(text('strong',status+' · '+money(order.total)),text('p',order.id),
     text('p',order.address+' · '+order.phone),text('p',order.slot_label),
     text('p',JSON.parse(order.items).map(item=>item.name+' × '+item.quantity).join(', ')));
+  const controls = text('div','');
+  controls.className = 'actions';
   if (['Placed','Confirmed'].includes(order.status)) {
-    const controls = text('div','');
-    controls.className = 'actions';
     const actions = order.status === 'Placed' ? [['accept','Accept'],['reject','Reject']] : [['deliver','Mark delivered']];
     for (const [action,label] of actions) {
       const button = text('button',label);
       button.onclick = async () => {
         if (action === 'reject' && !window.confirm('Reject this booking and release its stock?')) return;
-        for (const control of controls.children) control.disabled = true;
+        for (const control of controls.querySelectorAll('button')) control.disabled = true;
         try {
           await api('admin/orders/'+order.id+'/decision',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action})});
           await loadBookings();
         } catch (error) { notice(error.message); }
-        finally { for (const control of controls.children) control.disabled = false; }
+        finally { for (const control of controls.querySelectorAll('button')) control.disabled = false; }
       };
       controls.append(button);
     }
-    card.append(controls);
   }
+  const waUrl = whatsappInvoiceUrl(order);
+  if (waUrl) {
+    const link = text('a','WhatsApp Invoice');
+    link.href = waUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.className = 'wa-invoice-btn';
+    controls.append(link);
+  }
+  if (controls.childElementCount) card.append(controls);
   return card;
 }
 let bookingRequest = 0;
@@ -69,6 +106,13 @@ async function loadBookings() {
   get('stat-accepted').textContent=accepted;
   get('stat-delivered').textContent=Number.isFinite(delivered) ? delivered : 0;
   get('stat-revenue').textContent=money(Number.isFinite(earnings) ? earnings : 0);
+  const dateEl=get('dashboard-date');
+  if (dateEl) dateEl.textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'Asia/Kolkata'});
+  const activeSnap=JSON.stringify(today.orders);
+  if (renderedBookings.get('dashboard-active') !== activeSnap) {
+    get('dashboard-active').replaceChildren(...(today.orders.length ? today.orders.slice(0,8).map(bookingCard) : [text('p','All caught up — no pending or accepted bookings right now.')]));
+    renderedBookings.set('dashboard-active',activeSnap);
+  }
 }
 async function loadCatalog() {
   const {categories,products,demo} = await api('admin/catalog');
@@ -95,16 +139,66 @@ async function loadCatalog() {
     if (!groups.has(key)) groups.set(key,[]);
     groups.get(key).push(product);
   }
+  const stockBox=get('dashboard-stock');
+  if (stockBox) {
+    const outOfStock=products.filter(p=>p.stock===0);
+    const lowStock=products.filter(p=>p.stock>0 && p.stock<=5);
+    const summary=text('div','');
+    summary.className='stock-summary';
+    for (const [label,val,cls] of [
+      ['Products',groups.size,''],
+      ['Total packs',products.length,''],
+      ['Low stock (≤5)',lowStock.length,lowStock.length ? 'warn' : ''],
+      ['Out of stock',outOfStock.length,outOfStock.length ? 'danger' : '']
+    ]) {
+      const box=text('div','');
+      if (cls) box.className=cls;
+      box.append(text('strong',String(val)),text('span',label));
+      summary.append(box);
+    }
+    const alerts=[...outOfStock,...lowStock].slice(0,6);
+    if (alerts.length) {
+      const list=text('ul','');
+      list.className='stock-alerts';
+      for (const item of alerts) {
+        list.append(text('li',`${item.name} (${item.unit}) — ${item.stock===0 ? 'Out of stock' : item.stock+' left'}`));
+      }
+      stockBox.replaceChildren(summary,list);
+    } else {
+      const ok=text('p','All catalog packs are well stocked.');
+      ok.className='stock-ok';
+      stockBox.replaceChildren(summary,ok);
+    }
+  }
   get('products').replaceChildren(...[...groups.values()].map(packs=>{
     const [product] = packs;
     const card = text('article','');
     card.className='card';
     const media = text('div','');
     media.className='catalog-photo';
+const staticProducePhotos=new Set([
+  'aalu','beans','beetroot','bendakaya','black-mirchi','black-vankaya',
+  'cabbage','capsicum','carrot','cauliflower','chamagada','chikudukaya',
+  'dondakaya','kira','munakaya','onion','podugu-vankaya','sweet-potato',
+  'tomato','white-mirchi','white-vankaya'
+]);
+function adminPhotoUrl(product) {
+  const photo = typeof product === 'object' ? (product.photo || product.id) : product;
+  const slug = String(photo).replace(/-(?:250g|500g|1kg)$/, '').toLowerCase();
+  if (staticProducePhotos.has(slug)) return '/photos/' + slug + '.jpg';
+  const id = typeof product === 'object' ? product.id : product;
+  return '/api/photos/' + encodeURIComponent(id);
+}
     if (product.has_photo) {
       const image = document.createElement('img');
-      image.src='/api/photos/'+product.id;
-      image.alt=product.name;
+      image.src = adminPhotoUrl(product);
+      image.alt = product.name;
+      image.onerror = () => {
+        if (!image.dataset.retried) {
+          image.dataset.retried = '1';
+          image.src = '/api/photos/' + encodeURIComponent(product.id);
+        }
+      };
       media.append(image);
     }
     const tags=JSON.parse(product.tags ?? '[]');
