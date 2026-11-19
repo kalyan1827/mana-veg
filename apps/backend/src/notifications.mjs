@@ -88,28 +88,28 @@ function buildInvoice(order, heading, subtitle, options = {}) {
   </tr>`).join('');
 
   const ctaHtml = customerWaLink
-    ? `<p style="margin:18px 0 0;"><a href="${escapeHtml(customerWaLink)}" style="display:inline-block;background:#5a3e2b;color:#ffffff;padding:10px 16px;border-radius:8px;text-decoration:none;font-weight:bold;">Send WhatsApp Invoice to Customer</a></p>`
+    ? `<p style="margin:18px 0 0;"><a href="${escapeHtml(customerWaLink)}" style="display:inline-block;background:#1b7a37;color:#ffffff;padding:10px 16px;border-radius:8px;text-decoration:none;font-weight:bold;">Send WhatsApp Invoice to Customer</a></p>`
     : supportWaLink
-      ? `<p style="margin:18px 0 0;font-size:13px;color:#6c5b4d;">Need help? <a href="${escapeHtml(supportWaLink)}" style="color:#5a3e2b;font-weight:bold;">WhatsApp ${SHOP_NAME} (+${escapeHtml(adminWa)})</a></p>`
+      ? `<p style="margin:18px 0 0;font-size:13px;color:#4d6655;">Need help? <a href="${escapeHtml(supportWaLink)}" style="color:#1b7a37;font-weight:bold;">WhatsApp ${SHOP_NAME} (+${escapeHtml(adminWa)})</a></p>`
       : '';
 
-  const htmlContent = `<div style="margin:0;padding:16px 10px;background:#f7f4eb;font-family:system-ui,-apple-system,Arial,sans-serif;color:#35271e;">
-  <div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e1d8ca;border-radius:12px;overflow:hidden;">
-    <div style="background:#5a3e2b;color:#ffffff;padding:16px 20px;">
+  const htmlContent = `<div style="margin:0;padding:16px 10px;background:#f4f9f5;font-family:system-ui,-apple-system,Arial,sans-serif;color:#142718;">
+  <div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #cfe0d4;border-radius:12px;overflow:hidden;">
+    <div style="background:#1b7a37;color:#ffffff;padding:16px 20px;">
       <h2 style="margin:0;font-family:Georgia,serif;font-size:20px;">${SHOP_NAME}</h2>
       <p style="margin:4px 0 0;font-size:13px;opacity:0.9;">${escapeHtml(heading)} · #${escapeHtml(shortId)}</p>
     </div>
     <div style="padding:20px;">
       <p style="margin-top:0;">${escapeHtml(subtitle)}</p>
-      <p style="font-size:13px;color:#6c5b4d;line-height:1.55;">
+      <p style="font-size:13px;color:#4d6655;line-height:1.55;">
         <strong>Order ID:</strong> ${escapeHtml(order.id)}<br>
-        <strong>Delivery Slot:</strong> ${escapeHtml(order.slot_label)}<br>
+        <strong>Delivery:</strong> ${escapeHtml(order.slot_label)}<br>
         <strong>Phone:</strong> ${escapeHtml(order.phone)}<br>
         <strong>Delivery Address:</strong> ${escapeHtml(order.address)}
       </p>
       <table style="width:100%;border-collapse:collapse;font-size:14px;margin:16px 0;">
         <thead>
-          <tr style="background:#f7f4eb;text-align:left;color:#5a3e2b;">
+          <tr style="background:#eef7f0;text-align:left;color:#1b7a37;">
             <th style="padding:8px;">Item</th>
             <th style="padding:8px;">Pack</th>
             <th style="padding:8px;text-align:center;">Qty</th>
@@ -119,10 +119,10 @@ function buildInvoice(order, heading, subtitle, options = {}) {
         <tbody>${rowsHtml}</tbody>
       </table>
       <table style="width:100%;font-size:14px;margin-top:8px;">
-        <tr><td style="padding:4px 0;color:#6c5b4d;">Subtotal</td><td style="text-align:right;">${formatRupees(subtotal)}</td></tr>
-        ${discount > 0 ? `<tr><td style="padding:4px 0;color:#5a3e2b;font-weight:600;">Coupon (${escapeHtml(order.coupon_code || 'DISCOUNT')})</td><td style="text-align:right;color:#5a3e2b;font-weight:600;">-${formatRupees(discount)}</td></tr>` : ''}
-        <tr><td style="padding:4px 0;color:#6c5b4d;">Delivery Fee</td><td style="text-align:right;">${fee === 0 ? 'FREE' : formatRupees(fee)}</td></tr>
-        <tr><td style="padding:8px 0 0;font-weight:bold;color:#5a3e2b;border-top:1px solid #e1d8ca;">Total Payable on Delivery</td><td style="padding:8px 0 0;text-align:right;font-weight:bold;color:#5a3e2b;border-top:1px solid #e1d8ca;">${formatRupees(total)}</td></tr>
+        <tr><td style="padding:4px 0;color:#4d6655;">Subtotal</td><td style="text-align:right;">${formatRupees(subtotal)}</td></tr>
+        ${discount > 0 ? `<tr><td style="padding:4px 0;color:#1b7a37;font-weight:600;">Coupon (${escapeHtml(order.coupon_code || 'DISCOUNT')})</td><td style="text-align:right;color:#1b7a37;font-weight:600;">-${formatRupees(discount)}</td></tr>` : ''}
+        <tr><td style="padding:4px 0;color:#4d6655;">Delivery Fee</td><td style="text-align:right;">${fee === 0 ? 'FREE' : formatRupees(fee)}</td></tr>
+        <tr><td style="padding:8px 0 0;font-weight:bold;color:#1b7a37;border-top:1px solid #cfe0d4;">Total Payable on Delivery</td><td style="padding:8px 0 0;text-align:right;font-weight:bold;color:#1b7a37;border-top:1px solid #cfe0d4;">${formatRupees(total)}</td></tr>
       </table>
       ${ctaHtml}
     </div>
@@ -163,67 +163,44 @@ function scheduleNotification(env, ctx, task) {
 export async function notifyOrderPlaced(env, db, ctx, order) {
   if (!env?.BREVO_API_KEY || !env?.BREVO_SENDER) return;
   const task = (async () => {
-    const customerInvoice = buildInvoice(
-      order,
-      'Order Invoice (Received)',
-      'Thank you for your order! We have received your booking and will confirm it shortly.',
-      { adminWhatsApp: env.ADMIN_WHATSAPP, forAdmin: false }
-    );
+    // Customer does NOT receive an email on placement.
+    // Official invoice email is sent to customer ONLY when order is Delivered.
     const adminInvoice = buildInvoice(
       order,
       'New Order Received',
-      `New order placed by ${order.email} (${order.phone}). Open the Admin portal to Accept or Reject.`,
+      `New order placed by ${order.email} (${order.phone}). Open the Admin portal to Accept or Reject. Delivery scheduled for next day.`,
       { adminWhatsApp: env.ADMIN_WHATSAPP, forAdmin: true }
     );
     const admins = await db.prepare("SELECT email FROM users WHERE role='admin'").all()
       .then(res => res.results.map(row => row.email))
       .catch(() => []);
-    await Promise.all([
-      sendEmail(
-        env,
-        [order.email],
-        `${SHOP_NAME} Invoice — Order Received (#${customerInvoice.shortId})`,
-        customerInvoice.textContent,
-        customerInvoice.htmlContent
-      ),
-      admins.length ? sendEmail(
+    if (admins.length) {
+      await sendEmail(
         env,
         admins,
         `New Order #${adminInvoice.shortId} · ${formatRupees(order.total)} — ${SHOP_NAME}`,
         adminInvoice.textContent,
         adminInvoice.htmlContent
-      ) : Promise.resolve()
-    ]);
+      );
+    }
   })();
   return scheduleNotification(env, ctx, task);
 }
 
 export async function notifyOrderDecision(env, ctx, order) {
   if (!env?.BREVO_API_KEY || !env?.BREVO_SENDER || !order?.email) return;
-  const templates = {
-    Confirmed: {
-      heading: 'Order Confirmed',
-      subtitle: `Good news! Your ${SHOP_NAME} order is confirmed and will be delivered in your selected slot.`,
-      subjectPrefix: `${SHOP_NAME} Invoice — Order Confirmed`
-    },
-    Delivered: {
-      heading: 'Order Delivered',
-      subtitle: `Your ${SHOP_NAME} order has been delivered. Thank you for shopping with us!`,
-      subjectPrefix: `${SHOP_NAME} Invoice — Order Delivered`
-    },
-    Rejected: {
-      heading: 'Order Not Accepted',
-      subtitle: `Sorry, we could not fulfill your ${SHOP_NAME} order at this time. No payment is due.`,
-      subjectPrefix: `${SHOP_NAME} Order Update — Could Not Be Fulfilled`
-    }
-  };
-  const template = templates[order.status];
-  if (!template) return;
-  const invoice = buildInvoice(order, template.heading, template.subtitle, { adminWhatsApp: env.ADMIN_WHATSAPP, forAdmin: false });
+  // Send invoice email to customer ONLY when the order is Delivered
+  if (order.status !== 'Delivered') return;
+  const invoice = buildInvoice(
+    order,
+    'Order Delivered',
+    `Your ${SHOP_NAME} order has been delivered. Thank you for shopping with us! Here is your official order invoice.`,
+    { adminWhatsApp: env.ADMIN_WHATSAPP, forAdmin: false }
+  );
   const task = sendEmail(
     env,
     [order.email],
-    `${template.subjectPrefix} (#${invoice.shortId})`,
+    `${SHOP_NAME} Invoice — Order Delivered (#${invoice.shortId})`,
     invoice.textContent,
     invoice.htmlContent
   );

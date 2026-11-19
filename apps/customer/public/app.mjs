@@ -328,9 +328,15 @@ async function loadCatalog() {
   if(!names.includes(category)) category=names[0];
   get('category-filter').replaceChildren(...names.map(name=>action(name,()=>{category=name; drawCategory();})));
   const slots=get('slots');
-  const selectedSlot=slots.value;
-  slots.replaceChildren(...catalog.slots.map(slot=>new Option(slot.label,slot.id)));
-  if(catalog.slots.some(slot=>slot.id===selectedSlot)) slots.value=selectedSlot;
+  if(slots) {
+    if(slots.tagName==='SELECT') {
+      const selectedSlot=slots.value;
+      slots.replaceChildren(...catalog.slots.map(slot=>new Option(slot.label,slot.id)));
+      if(catalog.slots.some(slot=>slot.id===selectedSlot)) slots.value=selectedSlot;
+    } else {
+      if(catalog.slots && catalog.slots.length>0) slots.value=catalog.slots[0].id;
+    }
+  }
   drawCategory();
   drawCart();
 }
@@ -525,7 +531,8 @@ bind('checkout',async data=>{
   if(!profile) return signInFrom('cart');
   const point=coordinates(checkout);
   if(point.lat===null || point.lon===null) throw new Error('Use your current location or a saved address before placing an order.');
-  const order={...coordinates(checkout),address:data.get('address'),phone:data.get('phone'),slot:data.get('slot'),
+  const slotVal=data.get('slot') || get('slots')?.value || catalog?.slots?.[0]?.id || 'morning-slot';
+  const order={...coordinates(checkout),address:data.get('address'),phone:data.get('phone'),slot:slotVal,
     consent:data.has('consent'),coupon:coupon?.code,total:payable(),items:[...cart.values()].map(({product,quantity})=>({id:product.id,quantity}))};
   const fingerprint=JSON.stringify(order);
   if(pending?.fingerprint!==fingerprint) pending={fingerprint,key:crypto.randomUUID()};
@@ -540,7 +547,7 @@ bind('checkout',async data=>{
     return signInFrom('cart');
   }
   const orderedLines=[...cart.values()].map(({product,quantity})=>`• ${product.name} (${product.unit}) × ${quantity} = ${money(product.price*quantity)}`);
-  const slotLabel=checkout.elements.slot.selectedOptions[0]?.textContent || order.slot;
+  const slotLabel='Next day delivery';
   const appliedCoupon=coupon;
   cart.clear();
   coupon=undefined;
@@ -554,7 +561,7 @@ bind('checkout',async data=>{
     `*Manankuragayalu — New Order #${shortId}*`,
     `Order ID: ${result.order.id}`,
     `Phone: ${order.phone}`,
-    `Delivery Slot: ${slotLabel}`,
+    `Delivery: ${slotLabel}`,
     '',
     '*Ordered Items:*',
     ...orderedLines,
@@ -568,7 +575,7 @@ bind('checkout',async data=>{
   waLink.target='_blank';
   waLink.rel='noopener noreferrer';
   get('receipt').replaceChildren(
-    node('span','Order placed · '+result.order.id+' · '+money(result.order.total)),
+    node('span','Order placed · Delivery next day · '+result.order.id+' · '+money(result.order.total)),
     ' ',
     waLink
   );
@@ -590,12 +597,12 @@ async function loadOrders(offset=0) {
     const adminWa=catalog?.adminWhatsApp || '919398750721';
     const cards=result.orders.map(order=>{
       const card=node('article','','card order-card');
-      const status={Placed:'Awaiting acceptance',Confirmed:'Accepted',Rejected:'Rejected'}[order.status] ?? order.status;
+      const status={Placed:'Awaiting acceptance',Confirmed:'Order accepted · Delivery next day',Delivered:'Delivered',Rejected:'Rejected'}[order.status] ?? order.status;
       const shortId=String(order.id).slice(0,8).toUpperCase();
       const head=node('div','','order-card-head');
       const badge=node('strong',status,'badge order-status-'+(order.status || '').toLowerCase());
       head.append(badge,node('strong',money(order.total),'order-card-total'));
-      const meta=node('p',new Date(order.created).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Kolkata'})+' · '+order.slot_label,'order-card-meta');
+      const meta=node('p',new Date(order.created).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Kolkata'})+' · Next day delivery','order-card-meta');
       const itemsText=node('p',JSON.parse(order.items).map(item=>item.name+' ('+item.unit+') × '+item.quantity).join(', '),'order-card-items');
       const foot=node('div','','order-card-foot');
       const waLink=node('a','WhatsApp store','wa-btn');

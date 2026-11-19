@@ -355,28 +355,26 @@ test('order placement and admin decisions trigger Manankuragayalu invoice emails
   assert.equal(created.status, 201);
   const { order: { id } } = await created.json();
 
-  assert.equal(sent.length, 2);
-  const customerMail = sent.find(m => m.to.some(r => r.email === 'shopper@example.test'));
+  // On placement: customer does NOT receive an email; only admin gets notified!
+  assert.equal(sent.length, 1);
   const adminMail = sent.find(m => m.to.some(r => r.email === 'staff@example.test'));
-  assert.ok(customerMail && adminMail);
-  assert.equal(customerMail.sender.name, 'Manankuragayalu');
-  assert.match(customerMail.subject, /Manankuragayalu Invoice/);
-  assert.match(customerMail.textContent, /Tomato \(1 kg\) x 2/);
-  assert.match(customerMail.textContent, /9876543210/);
-  assert.match(customerMail.textContent, /Total Payable on Delivery: ₹80\.00/);
+  assert.ok(adminMail);
   assert.match(adminMail.subject, /New Order/);
   assert.match(adminMail.textContent, /Tomato \(1 kg\) x 2/);
+  assert.match(adminMail.textContent, /9876543210/);
 
   sent.length = 0;
+  // On admin accept: customer does NOT receive an email (status is displayed on the customer orders page)
   assert.equal((await call('admin/orders/' + id + '/decision', admin, { action: 'accept' })).status, 200);
-  assert.equal(sent.length, 1);
-  assert.equal(sent[0].to[0].email, 'shopper@example.test');
-  assert.match(sent[0].subject, /Order Confirmed/);
-  assert.match(sent[0].htmlContent, /Manankuragayalu/);
-  assert.match(sent[0].htmlContent, /Tomato/);
+  assert.equal(sent.length, 0);
 
+  // On admin deliver: customer receives the official invoice email
   sent.length = 0;
   assert.equal((await call('admin/orders/' + id + '/decision', admin, { action: 'deliver' })).status, 200);
   assert.equal(sent.length, 1);
-  assert.match(sent[0].subject, /Order Delivered/);
+  const deliveredMail = sent[0];
+  assert.equal(deliveredMail.to[0].email, 'shopper@example.test');
+  assert.match(deliveredMail.subject, /Order Delivered/);
+  assert.match(deliveredMail.htmlContent, /Manankuragayalu/);
+  assert.match(deliveredMail.htmlContent, /Tomato/);
 });

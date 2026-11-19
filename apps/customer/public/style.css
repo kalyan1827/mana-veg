@@ -2241,11 +2241,51 @@ body.has-cart-bar.has-delivery-progress {
   color: var(--walnut)
 }
 
-.order-status-confirmed,
+.order-status-confirmed {
+  background: #eef7f0;
+  border-left-color: #1b7a37;
+  color: #1b7a37;
+  font-weight: 700;
+}
+
 .order-status-delivered {
-  background: var(--cream);
-  border-left-color: var(--walnut);
-  color: var(--walnut)
+  background: #e8f5e9;
+  border-left-color: #2e7d32;
+  color: #1b5e20;
+  font-weight: 700;
+}
+
+.delivery-schedule-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  background: #f4f9f5;
+  border: 1px solid #cfe0d4;
+  border-left: 4px solid #1b7a37;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin: 0.35rem 0 0.8rem;
+}
+
+.delivery-schedule-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #1b7a37;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.delivery-schedule-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.delivery-schedule-desc {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: #4d6655;
 }
 
 .order-status-rejected {

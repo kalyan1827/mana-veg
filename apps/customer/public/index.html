@@ -45,7 +45,7 @@
   </div>
   <form class="panel checkout-card" id="checkout" hidden>
     <h2>Delivery &amp; checkout</h2>
-    <p class="checkout-hint">Confirm your delivery location and time slot to place your order.</p>
+    <p class="checkout-hint">Confirm your delivery location to place your order. Fresh produce is delivered the next day.</p>
     <div class="checkout-section">
       <h3>1. Delivery location</h3>
       <input type="hidden" name="lat"><input type="hidden" name="lon">
@@ -61,8 +61,15 @@
       <label>Mobile number <span class="auth-required" aria-hidden="true">*</span><input name="phone" type="tel" required placeholder="10-digit mobile number"></label>
     </div>
     <div class="checkout-section">
-      <h3>3. Delivery slot</h3>
-      <label>Choose delivery window<select name="slot" id="slots" required></select></label>
+      <h3>3. Delivery schedule</h3>
+      <input type="hidden" name="slot" id="slots" value="morning-slot">
+      <div class="delivery-schedule-card">
+        <div class="delivery-schedule-header">
+          <span class="delivery-schedule-icon" aria-hidden="true">🚚</span>
+          <strong>Next day delivery</strong>
+        </div>
+        <p class="delivery-schedule-desc">Freshly harvested vegetables will be delivered directly to your doorstep tomorrow.</p>
+      </div>
       <label class="consent-row"><input name="consent" type="checkbox"> <span>Send order updates on WhatsApp when available</span></label>
     </div>
     <div class="checkout-section">
