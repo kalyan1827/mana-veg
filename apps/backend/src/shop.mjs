@@ -50,29 +50,45 @@ export async function shopRoutes(request, db, path, reply, photos, demo = false,
   }
   const photoId = /^\/api\/photos\/([a-zA-Z0-9-]{1,80})$/.exec(path)?.[1];
   if (photoId && method === 'GET') {
-    const product = await db.prepare('SELECT photo FROM products WHERE id=? AND active=1').bind(photoId).first();
-    const photoKey = product?.photo || photoId;
-    if (photos) {
-      try {
-        const object = await photos.get(photoKey);
-        if (object) {
-          return new Response(object.body, { headers: {
-            'Content-Type': object.httpMetadata?.contentType || 'image/jpeg', 'X-Content-Type-Options': 'nosniff',
-            'Cache-Control': 'public, max-age=86400'
-          } });
-        }
-      } catch {}
-    }
     try {
+      const product = await db.prepare('SELECT photo FROM products WHERE id=?').bind(photoId).first();
+      const photoKey = product?.photo || photoId;
+      if (photos) {
+        try {
+          const object = await photos.get(photoKey);
+          if (object) {
+            return new Response(object.body, { headers: {
+              'Content-Type': object.httpMetadata?.contentType || 'image/jpeg', 'X-Content-Type-Options': 'nosniff',
+              'Cache-Control': 'public, max-age=86400'
+            } });
+          }
+        } catch {}
+      }
       const dbPhoto = await db.prepare('SELECT content_type, data FROM product_photos WHERE id=?').bind(photoKey).first();
       if (dbPhoto?.data) {
-        return new Response(dbPhoto.data, { headers: {
-          'Content-Type': dbPhoto.content_type || 'image/jpeg', 'X-Content-Type-Options': 'nosniff',
-          'Cache-Control': 'public, max-age=86400'
+        const raw = dbPhoto.data;
+        const bytes = (raw instanceof Uint8Array)
+          ? raw
+          : (raw instanceof ArrayBuffer)
+          ? new Uint8Array(raw)
+          : Array.isArray(raw)
+          ? new Uint8Array(raw)
+          : (typeof raw === 'object' && raw !== null)
+          ? new Uint8Array(Object.values(raw))
+          : new Uint8Array(0);
+
+        return new Response(bytes, { headers: {
+          'Content-Type': dbPhoto.content_type || 'image/jpeg',
+          'X-Content-Type-Options': 'nosniff',
+          'Cache-Control': 'public, max-age=86400',
+          'Content-Length': String(bytes.byteLength)
         } });
       }
-    } catch {}
-    return reply({ error: 'Photo not found' }, 404);
+      return reply({ error: 'Photo not found' }, 404);
+    } catch (err) {
+      console.error('Error serving photo:', err);
+      return reply({ error: 'Photo fetch error: ' + (err?.message || String(err)) }, 500);
+    }
   }
   if (path === '/api/catalog' && method === 'GET') {
     const products = await getRows(db.prepare(`SELECT p.id,p.name,p.unit,p.price,p.stock,p.pack_group,p.kilo_price,p.tags,p.original_price,p.photo,p.photo IS NOT NULL AS has_photo,c.name AS category
