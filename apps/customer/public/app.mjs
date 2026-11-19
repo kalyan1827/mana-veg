@@ -250,12 +250,32 @@ function productCard(variants) {
     media.append(node('span','Photo unavailable'));
   }
   card.append(media);
-  const tags=JSON.parse(product.tags ?? '[]').sort((a,b)=>Number(b==="Today's special")-Number(a==="Today's special"));
-  const hasOffer=variants.some(option=>option.original_price>option.price);
+  const allTags = JSON.parse(product.tags ?? '[]');
+  const hasTagOffer = allTags.some(t => typeof t === 'string' && t.toLowerCase() === 'offer');
+  const tags = allTags
+    .filter(t => typeof t === 'string' && t.toLowerCase() !== 'offer')
+    .sort((a,b) => Number(b === "Today's special") - Number(a === "Today's special"));
+  let maxDiscount = 0;
+  for (const option of variants) {
+    if (option.original_price > option.price) {
+      const pct = Math.round(((option.original_price - option.price) / option.original_price) * 100);
+      if (pct > maxDiscount) maxDiscount = pct;
+    }
+  }
+  const hasOffer = maxDiscount > 0 || hasTagOffer;
   if(tags.length) {
     const badges=node('div','','photo-tags');
-    for(const tag of tags) badges.append(node('span',tag,tag==="Today's special" ? 'featured' : ''));
+    for(const tag of tags) {
+      const tagSlug = tag.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const isSpecial = tag === "Today's special";
+      badges.append(node('span', tag, 'tag-badge tag-badge-' + tagSlug + (isSpecial ? ' featured' : '')));
+    }
     media.append(badges);
+  }
+  if(hasOffer) {
+    const offerLabel = maxDiscount > 0 ? `${maxDiscount}% OFF` : 'Offer';
+    const offerBadge = node('span', offerLabel, 'product-offer-badge');
+    media.append(offerBadge);
   }
   let variant = variants.find(option=>option.stock) ?? product;
   const pack = node('fieldset','','pack-picker');

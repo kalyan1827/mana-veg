@@ -58,6 +58,8 @@ function bookingCard(order) {
     const actions = order.status === 'Placed' ? [['accept','Accept'],['reject','Reject']] : [['deliver','Mark delivered']];
     for (const [action,label] of actions) {
       const button = text('button',label);
+      button.type = 'button';
+      button.className = 'btn-action btn-action-' + action;
       button.onclick = async () => {
         if (action === 'reject' && !window.confirm('Reject this booking and release its stock?')) return;
         for (const control of controls.querySelectorAll('button')) control.disabled = true;

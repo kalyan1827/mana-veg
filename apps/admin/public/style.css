@@ -1363,6 +1363,75 @@ main h3 {
   font-size: .82rem
 }
 
+#bookings .actions .btn-action-reject,
+#dashboard-active .actions .btn-action-reject,
+.btn-action-reject {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border: 1px solid #b91c1c !important;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+#bookings .actions .btn-action-reject:hover:enabled,
+#dashboard-active .actions .btn-action-reject:hover:enabled,
+.btn-action-reject:hover:enabled {
+  background: #b91c1c !important;
+  border-color: #991b1b !important;
+  color: #ffffff !important;
+}
+
+#bookings .actions .btn-action-reject:active:enabled,
+#dashboard-active .actions .btn-action-reject:active:enabled,
+.btn-action-reject:active:enabled {
+  background: #991b1b !important;
+}
+
+#bookings .actions .btn-action-accept,
+#dashboard-active .actions .btn-action-accept,
+.btn-action-accept {
+  background: #1b7a37 !important;
+  color: #ffffff !important;
+  border: 1px solid #145e2a !important;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+#bookings .actions .btn-action-accept:hover:enabled,
+#dashboard-active .actions .btn-action-accept:hover:enabled,
+.btn-action-accept:hover:enabled {
+  background: #145e2a !important;
+  border-color: #0f441e !important;
+  color: #ffffff !important;
+}
+
+#bookings .actions .btn-action-accept:active:enabled,
+#dashboard-active .actions .btn-action-accept:active:enabled,
+.btn-action-accept:active:enabled {
+  background: #0f441e !important;
+}
+
+#bookings .actions .btn-action-deliver,
+#dashboard-active .actions .btn-action-deliver,
+.btn-action-deliver {
+  background: #1b7a37 !important;
+  color: #ffffff !important;
+  border: 1px solid #145e2a !important;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+#bookings .actions .btn-action-deliver:hover:enabled,
+#dashboard-active .actions .btn-action-deliver:hover:enabled,
+.btn-action-deliver:hover:enabled {
+  background: #145e2a !important;
+  border-color: #0f441e !important;
+  color: #ffffff !important;
+}
+
 #notice {
   bottom: calc(4.3rem + env(safe-area-inset-bottom));
   z-index: 90

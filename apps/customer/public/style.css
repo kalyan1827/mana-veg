@@ -657,62 +657,112 @@ button:enabled:hover,
 
 .photo-tags {
   position: absolute;
-  inset: .4rem .4rem auto;
+  top: .45rem;
+  left: .45rem;
+  right: auto;
   display: flex;
-  flex-wrap: wrap;
-  gap: .2rem;
-  z-index: 1
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .25rem;
+  z-index: 2;
+  pointer-events: none;
+  max-width: 62%
 }
 
-.photo-tags span {
-  background: var(--white);
-  color: var(--ink);
+.photo-tags span,
+.tag-badge {
+  display: inline-flex;
+  align-items: center;
   font-size: .72rem;
   font-weight: 700;
   border-radius: 5px;
-  padding: .2rem .35rem;
-  line-height: 1.2
+  padding: .2rem .42rem;
+  line-height: 1.2;
+  background: #ffffff;
+  color: #142718;
+  border: 1px solid #cfe0d4;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  white-space: nowrap
 }
 
+/* Today's Special Badge: Radiant amber/orange flame */
+.photo-tags .tag-badge-today-s-special,
+.photo-tags .tag-badge-today-special,
+.photo-tags .tag-featured,
 .photo-tags .featured {
-  background: var(--walnut);
-  color: var(--white)
+  background: linear-gradient(135deg, #ff8f00 0%, #e65100 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255,255,255,.45);
+  box-shadow: 0 1px 4px rgba(230,81,0,.35);
+  font-weight: 700
+}
+
+/* Seasonal Badge: Fresh field teal-green */
+.photo-tags .tag-badge-seasonal {
+  background: linear-gradient(135deg, #00897b 0%, #00695c 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255,255,255,.45);
+  box-shadow: 0 1px 4px rgba(0,105,92,.35);
+  font-weight: 700
+}
+
+/* Regular Badge: Brand botanical green */
+.photo-tags .tag-badge-regular {
+  background: #eef7f0;
+  color: #1b7a37;
+  border: 1px solid #a3d9b1;
+  box-shadow: 0 1px 3px rgba(27,122,55,.15);
+  font-weight: 700
+}
+
+/* Leafy Vegetables Badge: Forest green */
+.photo-tags .tag-badge-leafy-vegetables {
+  background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255,255,255,.45);
+  box-shadow: 0 1px 4px rgba(46,125,50,.3);
+  font-weight: 700
+}
+
+/* Fruit Badge: Vibrant berry/plum */
+.photo-tags .tag-badge-fruit {
+  background: linear-gradient(135deg, #d81b60 0%, #ad1457 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255,255,255,.45);
+  box-shadow: 0 1px 4px rgba(173,20,87,.3);
+  font-weight: 700
+}
+
+/* Offer Badge on Top Right of Vegetable Card */
+.product-offer-badge {
+  position: absolute;
+  top: .45rem;
+  right: .45rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: .22rem .5rem;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #e53935 0%, #b71c1c 100%);
+  color: #ffffff;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  border: 1px solid rgba(255,255,255,.45);
+  box-shadow: 0 2px 6px rgba(183,28,28,.35);
+  pointer-events: none;
+  line-height: 1.15
+}
+
+.produce-card > .product-offer {
+  display: none
 }
 
 .pack-option s {
   display: block;
   font-size: .75rem
-}
-
-.photo-tags {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: .25rem;
-  pointer-events: none
-}
-
-.photo-tags span {
-  max-width: 100%;
-  overflow-wrap: anywhere;
-  font-weight: 500;
-  border: 1px solid var(--border);
-  box-shadow: 0 1px 3px var(--shadow)
-}
-
-.photo-tags .featured {
-  background: var(--cream);
-  color: var(--walnut);
-  border-color: var(--field-border)
-}
-
-.product-offer {
-  align-self: flex-start;
-  padding: .2rem .5rem;
-  border-radius: 5px;
-  background: var(--cream);
-  color: var(--walnut);
-  font-size: .8rem;
-  font-weight: 600
 }
 
 .pack-option s {
@@ -790,13 +840,25 @@ button:enabled:hover,
   }
 
   .produce-card .photo-tags {
-    inset: .25rem .25rem auto;
+    top: .25rem;
+    left: .25rem;
+    right: auto;
     gap: .15rem
   }
 
-  .produce-card .photo-tags span {
+  .produce-card .photo-tags span,
+  .produce-card .tag-badge {
     font-size: .62rem;
-    padding: .12rem .23rem
+    padding: .12rem .28rem;
+    border-radius: 4px
+  }
+
+  .produce-card .product-offer-badge {
+    top: .25rem;
+    right: .25rem;
+    font-size: .62rem;
+    padding: .14rem .35rem;
+    border-radius: 4px
   }
 
   .produce-card>button {
