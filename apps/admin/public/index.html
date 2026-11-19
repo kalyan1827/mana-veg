@@ -118,14 +118,18 @@
 <section id="offers" hidden>
   <h2>Offers</h2>
   <section class="panel offer-card">
-    <h3>Free delivery</h3>
+    <h3>Delivery settings</h3>
     <form id="delivery-offer-form" novalidate>
+    <label>Standard delivery fee (₹)
+      <input name="fee" required inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?" maxlength="6" aria-describedby="delivery-fee-error">
+    </label>
+    <p id="delivery-fee-error" class="field-error" role="status"></p>
     <label>Free delivery for subtotals above (₹)
       <input name="threshold" required inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?" maxlength="12" aria-describedby="delivery-offer-error">
     </label>
     <p id="delivery-offer-error" class="field-error" role="status"></p>
     <p>Uses the item subtotal after discounts, before delivery.</p>
-    <button id="save-delivery-offer" disabled>Publish delivery offer</button>
+    <button id="save-delivery-offer" disabled>Publish delivery settings</button>
     <p id="delivery-offer-status" role="status"></p>
     </form>
   </section>

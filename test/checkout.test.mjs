@@ -20,7 +20,7 @@ test('admin publishes a pack and checkout reserves the last unit only once',asyn
   const {id}=await publish.json();
   const catalog=await (await fetch('/api/catalog')).json();
   assert.ok(catalog.products.some(product=>product.id===id));
-  const payload={lat:17.47,lon:78.48,address:'Test address',phone:'9999999999',slot:'local',items:[{id,quantity:1}],total:6000};
+  const payload={lat:17.47,lon:78.48,address:'Test address',phone:'9999999999',slot:'local',items:[{id,quantity:1}],total:8900};
   assert.equal((await (await fetch('/api/delivery/check',null,{lat:payload.lat,lon:payload.lon})).json()).eligible,true);
   assert.equal((await (await fetch('/api/delivery/check',null,{lat:20,lon:payload.lon})).json()).eligible,false);
   assert.equal((await fetch('/api/orders',null,payload,'guest')).status,401);
@@ -58,7 +58,7 @@ test('admin publishes a pack and checkout reserves the last unit only once',asyn
   assert.equal((await fetch(deliveryPath,admin,{action:'deliver'})).status,200);
   assert.equal((await fetch(deliveryPath,admin,{action:'deliver'})).status,409);
   const {counts}=await (await fetch('/api/admin/orders?today=1',admin)).json();
-  assert.deepEqual(counts,{total:1,pending:0,accepted:0,delivered:1,earnings:6000});
+  assert.deepEqual(counts,{total:1,pending:0,accepted:0,delivered:1,earnings:8900});
   const customerOrder=await (await fetch('/api/orders/'+accepted.id,customer)).json();
   assert.equal(customerOrder.order.status,'Delivered');
 });
@@ -258,9 +258,9 @@ test('publishing ₹30 per kg creates all three priced variants and checkout cha
   assert.ok(variants.filter(product=>product.unit!=='1 kg').every(product=>product.original_price===null));
   assert.equal(variants[0].pack_group,variants[1].pack_group);
   const response=await call('/api/orders',{method:'POST',headers:{Origin:origin,Cookie:customer.split(';')[0],'Idempotency-Key':'two-kilos'},
-    body:JSON.stringify({lat:17.47,lon:78.48,address:'Test address',phone:'9999999999',slot:'local',items:[{id:kilo.id,quantity:2}],total:8000})});
+    body:JSON.stringify({lat:17.47,lon:78.48,address:'Test address',phone:'9999999999',slot:'local',items:[{id:kilo.id,quantity:2}],total:10900})});
   assert.equal(response.status,201);
-  assert.equal((await response.json()).order.total,8000);
+  assert.equal((await response.json()).order.total,10900);
   const editPath='/api/admin/catalog/'+id;
   const editOptions={method:'PUT',headers:{Origin:origin,Cookie:admin.split(';')[0]},body:form};
   form.set('previousStock',JSON.stringify(Object.fromEntries(variants.map(pack=>[pack.id,pack.stock]))));
@@ -324,7 +324,7 @@ test('admin targets a coupon by username and checkout reserves and releases its 
   assert.equal((await call('coupons/quote',other,quote)).status,409);
   assert.deepEqual(await (await call('coupons/quote',shopper,quote)).json(),{code:'FRESH10',discount:1000});
   const order={address:'Test address',phone:'9999999999',lat:17.47,lon:78.48,slot:'local',
-    items:[{id:'tomato-1kg',quantity:1}],coupon:'FRESH10',total:4000};
+    items:[{id:'tomato-1kg',quantity:1}],coupon:'FRESH10',total:6900};
   assert.equal((await call('orders',other,order,'other')).status,409);
   const created=await call('orders',shopper,order,'first');
   assert.equal(created.status,201);
@@ -339,7 +339,7 @@ test('admin targets a coupon by username and checkout reserves and releases its 
     method:'PUT',headers:{Origin:origin,Cookie:admin.split(';')[0]},body:JSON.stringify({threshold})
   }),{DB});
   assert.equal((await setting(3000)).status,200);
-  const regular={...order,coupon:undefined,total:5000};
+  const regular={...order,coupon:undefined,total:7900};
   assert.equal((await call('orders',shopper,regular,'at-threshold')).status,201);
   assert.equal((await setting(2900)).status,200);
   assert.equal((await call('orders',shopper,regular,'stale-fee')).status,409);
@@ -372,7 +372,7 @@ test('order placement and admin decisions trigger Manankuragayalu invoice emails
 
   const created = await call('orders', shopper, {
     address: 'Bowenpally Main Rd', phone: '9876543210', lat: 17.47, lon: 78.48,
-    slot: 'local', items: [{ id: 'tomato-1kg', quantity: 2 }], total: 8000
+    slot: 'local', items: [{ id: 'tomato-1kg', quantity: 2 }], total: 10900
   }, 'invoice-order');
   assert.equal(created.status, 201);
   const { order: { id } } = await created.json();

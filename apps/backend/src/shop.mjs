@@ -95,13 +95,19 @@ export async function shopRoutes(request, db, path, reply, photos, demo = false,
   if (session.role !== (admin ? 'admin' : 'customer')) return reply({ error: 'Access denied' }, 403);
   if (checkout) return createOrder(request, db, session.email, reply, env, ctx);
   if(path==='/api/admin/delivery-offer' && method==='GET') {
-    const settings=await db.prepare('SELECT free_delivery_threshold AS threshold FROM settings WHERE id=1').first();
+    const settings=await db.prepare('SELECT fee, free_delivery_threshold AS threshold FROM settings WHERE id=1').first();
     return reply(settings);
   }
   if(path==='/api/admin/delivery-offer' && method==='PUT') {
     const input=await request.json().catch(()=>null);
     const threshold=input?.threshold;
     if(!Number.isSafeInteger(threshold) || threshold<0 || threshold>10000000000) return reply({error:'Enter a valid free-delivery threshold'},400);
+    const fee=input?.fee;
+    if(fee !== undefined) {
+      if(!Number.isSafeInteger(fee) || fee<0 || fee>10000000000) return reply({error:'Enter a valid delivery fee'},400);
+      await db.prepare('UPDATE settings SET free_delivery_threshold=?, fee=? WHERE id=1').bind(threshold, fee).run();
+      return reply({threshold, fee});
+    }
     await db.prepare('UPDATE settings SET free_delivery_threshold=? WHERE id=1').bind(threshold).run();
     return reply({threshold});
   }

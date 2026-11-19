@@ -625,16 +625,22 @@ async function loadDeliveryOffer() {
   const button=get('save-delivery-offer');
   const status=get('delivery-offer-status');
   button.disabled=true;
-  status.textContent='Loading delivery offer…';
+  status.textContent='Loading delivery settings…';
   try {
-    const {threshold}=await api('admin/delivery-offer');
-    deliveryOfferForm.elements.threshold.value=threshold/100;
-    status.textContent='Published threshold: '+money(threshold);
+    const data=await api('admin/delivery-offer');
+    if (deliveryOfferForm.elements.fee) deliveryOfferForm.elements.fee.value=Number(data.fee ?? 4900)/100;
+    deliveryOfferForm.elements.threshold.value=Number(data.threshold ?? 50000)/100;
+    status.textContent='Delivery fee: '+money(data.fee ?? 4900)+' · Free delivery above '+money(data.threshold ?? 50000);
     button.disabled=false;
   } catch(error) {
-    status.textContent='Could not load the delivery offer. '+error.message;
+    status.textContent='Could not load delivery settings. '+error.message;
   }
 }
+deliveryOfferForm.elements.fee?.addEventListener('input', () => {
+  const val = deliveryOfferForm.elements.fee.value.trim();
+  const num = Number(val);
+  if (val && !isNaN(num) && num >= 0) clearFieldError('delivery-fee-error', deliveryOfferForm.elements.fee);
+});
 deliveryOfferForm.elements.threshold.addEventListener('input', () => {
   const val = deliveryOfferForm.elements.threshold.value.trim();
   const num = Number(val);
@@ -642,27 +648,40 @@ deliveryOfferForm.elements.threshold.addEventListener('input', () => {
 });
 deliveryOfferForm.onsubmit=async event=>{
   event.preventDefault();
-  const input=deliveryOfferForm.elements.threshold;
-  const val=input.value.trim();
-  const num=Number(val);
-  if (!val) {
-    setFieldError('delivery-offer-error', input, 'Please enter minimum cart amount for free delivery.');
-    input.focus();
+  const feeInput=deliveryOfferForm.elements.fee;
+  const threshInput=deliveryOfferForm.elements.threshold;
+  const feeVal=feeInput?.value.trim() ?? '49';
+  const threshVal=threshInput.value.trim();
+  const feeNum=Number(feeVal);
+  const threshNum=Number(threshVal);
+
+  if (!feeVal || isNaN(feeNum) || feeNum < 0) {
+    setFieldError('delivery-fee-error', feeInput, 'Please enter a valid delivery fee in rupees (e.g. 49).');
+    feeInput?.focus();
     return;
   }
-  if (isNaN(num) || num < 0) {
-    setFieldError('delivery-offer-error', input, 'Please enter a valid amount in rupees (e.g. 500).');
-    input.focus();
+  clearFieldError('delivery-fee-error', feeInput);
+
+  if (!threshVal) {
+    setFieldError('delivery-offer-error', threshInput, 'Please enter minimum cart amount for free delivery.');
+    threshInput.focus();
     return;
   }
-  clearFieldError('delivery-offer-error', input);
+  if (isNaN(threshNum) || threshNum < 0) {
+    setFieldError('delivery-offer-error', threshInput, 'Please enter a valid amount in rupees (e.g. 500).');
+    threshInput.focus();
+    return;
+  }
+  clearFieldError('delivery-offer-error', threshInput);
+
   const button=get('save-delivery-offer');
   const status=get('delivery-offer-status');
   button.disabled=true;
   try {
-    const threshold=Math.round(num*100);
-    const saved=await api('admin/delivery-offer',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({threshold})});
-    status.textContent='Published. Free delivery for subtotals above '+money(saved.threshold)+'.';
+    const fee=Math.round(feeNum*100);
+    const threshold=Math.round(threshNum*100);
+    const saved=await api('admin/delivery-offer',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({threshold,fee})});
+    status.textContent='Published. Delivery fee: '+money(saved.fee ?? fee)+' · Free delivery above '+money(saved.threshold)+'.';
   } catch(error) {status.textContent=error.message;}
   finally {button.disabled=false;}
 };
