@@ -235,7 +235,12 @@ function drawCart() {
     return row;
   });
   const itemsWrap=node('div','','cart-items-card');
-  itemsWrap.append(...rows);
+  const itemsHeader=node('div','','cart-items-card-header');
+  itemsHeader.append(
+    node('h2',`Items in cart (${cart.size})`),
+    node('span',`${count} ${count===1 ? 'pack' : 'packs'} total`,'cart-items-total-pill')
+  );
+  itemsWrap.append(itemsHeader,...rows);
   const billWrap=node('div','','bill-summary-card');
   billWrap.append(node('h2','Bill summary'));
   const breakdown=node('dl','','cart-breakdown');
@@ -582,6 +587,7 @@ get('apply-coupon').onclick=async event=>{
   }
   finally { button.disabled=false; }
 };
+let lastPlacedOrderId = null;
 bind('checkout',async data=>{
   if(!cart.size) throw new Error('Add products before placing an order.');
   if(!profile) return signInFrom('cart');
@@ -605,47 +611,17 @@ bind('checkout',async data=>{
   const orderedLines=[...cart.values()].map(({product,quantity})=>`• ${product.name} (${product.unit}) × ${quantity} = ${money(product.price*quantity)}`);
   const slotLabel='Next day delivery';
   const appliedCoupon=coupon;
+  const placedOrderId=result.order.id;
+  const shortId=String(placedOrderId).slice(0,8).toUpperCase();
   cart.clear();
   coupon=undefined;
   checkout.elements.coupon.value='';
   get('coupon-status').textContent='';
   pending=null;
   drawCart();
-  const shortId=String(result.order.id).slice(0,8).toUpperCase();
-  const adminWa=catalog?.adminWhatsApp || '919398750721';
-  const waText=[
-    `*Manankuragayalu — New Order #${shortId}*`,
-    `Order ID: ${result.order.id}`,
-    `Phone: ${order.phone}`,
-    `Delivery: ${slotLabel}`,
-    '',
-    '*Ordered Items:*',
-    ...orderedLines,
-    ...(appliedCoupon ? ['', `Coupon: ${appliedCoupon.code} (-${money(appliedCoupon.discount)})`] : []),
-    '',
-    `*Total Payable on Delivery: ${money(result.order.total)}*`,
-    `Address: ${order.address}`
-  ].join('\n');
-  const waReceiptUrl = 'https://wa.me/'+adminWa+'?text='+encodeURIComponent(waText);
-  const isReceiptSent = localStorage.getItem('wa_sent_' + result.order.id) === '1';
-  const waLink = node('button', isReceiptSent ? '✓ Sent to WhatsApp' : 'Send order on WhatsApp', 'wa-btn' + (isReceiptSent ? ' wa-btn-disabled' : ''));
-  waLink.type = 'button';
-  if (isReceiptSent) {
-    waLink.disabled = true;
-  } else {
-    waLink.onclick = () => {
-      window.open(waReceiptUrl, '_blank', 'noopener,noreferrer');
-      localStorage.setItem('wa_sent_' + result.order.id, '1');
-      waLink.textContent = '✓ Sent to WhatsApp';
-      waLink.classList.add('wa-btn-disabled');
-      waLink.disabled = true;
-    };
-  }
-  get('receipt').replaceChildren(
-    node('span','Order placed · Delivery next day · '+result.order.id+' · '+money(result.order.total)),
-    ' ',
-    waLink
-  );
+  lastPlacedOrderId = placedOrderId;
+  notice('🎉 Order #' + shortId + ' placed successfully! Delivery next day.');
+  location.hash = '#orders';
   loadCatalog().catch(error=>notice(error.message));
 });
 async function loadOrders(offset=0) {
@@ -663,35 +639,117 @@ async function loadOrders(offset=0) {
     if(request!==orderRequest) return;
     const adminWa=catalog?.adminWhatsApp || '919398750721';
     const cards=result.orders.map(order=>{
-      const card=node('article','','card order-card');
-      const status={Placed:'Awaiting acceptance',Confirmed:'Order accepted · Delivery next day',Delivered:'Delivered',Rejected:'Rejected'}[order.status] ?? order.status;
+      const isJustPlaced = order.id === lastPlacedOrderId;
+      const card=node('article','','card order-card' + (isJustPlaced ? ' order-newly-placed' : ''));
       const shortId=String(order.id).slice(0,8).toUpperCase();
-      const head=node('div','','order-card-head');
-      const badge=node('strong',status,'badge order-status-'+(order.status || '').toLowerCase());
-      head.append(badge,node('strong',money(order.total),'order-card-total'));
-      const meta=node('p',new Date(order.created).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Kolkata'})+' · Next day delivery','order-card-meta');
-      const items=JSON.parse(order.items || '[]');
-      const itemsText=node('p',items.map(item=>item.name+' ('+item.unit+') × '+item.quantity).join(', '),'order-card-items');
-      const foot=node('div','','order-card-foot');
+      const statusIcon = { Placed:'🟡', Confirmed:'🟢', Delivered:'✅', Rejected:'❌' }[order.status] ?? '📦';
+      const statusText = {
+        Placed: 'Order Placed · Awaiting Confirmation',
+        Confirmed: 'Order Accepted · Delivery Tomorrow',
+        Delivered: 'Order Delivered',
+        Rejected: 'Order Rejected'
+      }[order.status] ?? order.status;
 
-      // Build complete invoice bill message for store admin
-      const subtotal = items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
+      // Banner for newly placed order
+      if (isJustPlaced) {
+        const justPlacedBanner = node('div', '', 'order-newly-placed-banner');
+        justPlacedBanner.append(node('span', '🎉 Order placed successfully! Delivering tomorrow to your address.'));
+        card.append(justPlacedBanner);
+      }
+
+      // 1. Head (Status badge + Total payable)
+      const head=node('div','','order-card-head');
+      const badge=node('div','','order-status-badge order-status-'+(order.status || '').toLowerCase());
+      badge.append(node('span', statusIcon + ' ' + statusText));
+
+      const priceWrap=node('div','','order-card-price-wrap');
+      priceWrap.append(node('small','Total payable:'), node('strong',money(order.total),'order-card-total'));
+      head.append(badge, priceWrap);
+
+      // 2. Meta bar (Order ID, Date, Delivery schedule)
+      const dateStr = new Date(order.created).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Kolkata'});
+      const meta=node('div','','order-card-meta-bar');
+      meta.append(
+        node('span','Order #' + shortId,'order-card-id'),
+        node('span',' · ' + dateStr),
+        node('span',' · 🚚 Next day delivery','order-card-delivery-tag')
+      );
+
+      // Parse items
+      const items=JSON.parse(order.items || '[]');
+      const totalPacks = items.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0);
+
+      // 3. Count summary pill
+      const countPill=node('div','','order-count-summary');
+      countPill.append(
+        node('span', `📦 ${items.length} ${items.length===1 ? 'item' : 'items'} · ${totalPacks} ${totalPacks===1 ? 'pack' : 'packs'} total`)
+      );
+
+      // 4. Structured Itemized List with S.No. and Quantity
+      const itemsTable=node('div','','order-items-table');
+      items.forEach((item, index) => {
+        const row=node('div','','order-item-row');
+        const sno=node('span', `${index + 1}.`, 'order-item-sno');
+        
+        const details=node('div','','order-item-details');
+        details.append(
+          node('strong', item.name || 'Vegetable', 'order-item-name'),
+          node('span', item.unit ? ` (${item.unit})` : '', 'order-item-unit')
+        );
+
+        const qtyBadge=node('span', `Qty: ${item.quantity || 1}`, 'order-item-qty');
+        
+        const itemPrice = Number(item.price || 0);
+        const priceSpan=node('span', itemPrice > 0 ? money(itemPrice * (item.quantity || 1)) : '', 'order-item-price');
+
+        row.append(sno, details, qtyBadge, priceSpan);
+        itemsTable.append(row);
+      });
+
+      // 5. Bill summary
+      const subtotal = items.reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1), 0);
       const fee = Number(order.fee || 0);
       const discount = Math.max(0, (subtotal + fee) - Number(order.total || 0));
-      const dateStr = new Date(order.created).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Kolkata'});
+
+      const billBox=node('div','','order-bill-box');
+      const billDl=node('dl','','order-bill-dl');
+      if (subtotal > 0) {
+        billDl.append(node('dt','Items subtotal:'), node('dd',money(subtotal)));
+      }
+      if (discount > 0) {
+        billDl.append(node('dt','Coupon discount:'), node('dd','-' + money(discount)));
+      }
+      billDl.append(
+        node('dt','Delivery fee:'), node('dd',fee === 0 ? 'FREE' : money(fee)),
+        node('dt','Total payable:'), node('dd',money(order.total))
+      );
+      billBox.append(billDl);
+
+      // 6. Delivery Address Box
+      const addressBox=node('div','','order-address-box');
+      addressBox.append(
+        node('p', `📍 Delivery address: ${order.address || 'Standard address'}`),
+        node('p', `📞 Mobile: ${order.phone || ''}`)
+      );
+
+      // 7. Footer (WhatsApp Store Button with itemized message)
+      const foot=node('div','','order-card-foot');
+      const isSent = localStorage.getItem('wa_sent_' + order.id) === '1';
+
+      const waItemLines = items.map((item, idx) => `${idx + 1}. ${item.name} (${item.unit}) × ${item.quantity} = ${money((item.price || 0) * (item.quantity || 1))}`);
       const waInvoiceText = [
         '*Manankuragayalu — Order Invoice*',
         `Order ID: #${shortId} (${order.id})`,
         `Date: ${dateStr}`,
-        `Status: ${status}`,
+        `Status: ${statusText}`,
         `Phone: ${order.phone}`,
         `Delivery Address: ${order.address}`,
         `Delivery Schedule: Next day delivery`,
         '',
-        '*Ordered Items:*',
-        ...items.map(item => `• ${item.name} (${item.unit}) × ${item.quantity} = ${money(item.price * item.quantity)}`),
+        `*Ordered Items (${items.length} items · ${totalPacks} packs):*`,
+        ...waItemLines,
         '',
-        `Subtotal: ${money(subtotal)}`,
+        ...(subtotal > 0 ? [`Subtotal: ${money(subtotal)}`] : []),
         ...(discount > 0 ? [`Coupon Discount: -${money(discount)}`] : []),
         `Delivery Fee: ${fee === 0 ? 'FREE' : money(fee)}`,
         `*Total Payable on Delivery: ${money(order.total)}*`,
@@ -701,8 +759,7 @@ async function loadOrders(offset=0) {
       ].join('\n');
       const waUrl = 'https://wa.me/' + adminWa + '?text=' + encodeURIComponent(waInvoiceText);
 
-      const isSent = localStorage.getItem('wa_sent_' + order.id) === '1';
-      const waBtn = node('button', isSent ? '✓ Sent to WhatsApp' : 'WhatsApp store', 'wa-btn' + (isSent ? ' wa-btn-disabled' : ''));
+      const waBtn = node('button', isSent ? '✓ Sent to WhatsApp' : '📲 WhatsApp Store', 'wa-btn' + (isSent ? ' wa-btn-disabled' : ''));
       waBtn.type = 'button';
       if (isSent) {
         waBtn.disabled = true;
@@ -716,8 +773,8 @@ async function loadOrders(offset=0) {
         };
       }
 
-      foot.append(node('small','Order #'+shortId),waBtn);
-      card.append(head,meta,itemsText,foot);
+      foot.append(node('small', 'Cash / UPI on delivery'), waBtn);
+      card.append(head, meta, countPill, itemsTable, billBox, addressBox, foot);
       return card;
     });
     if(offset) history.append(...cards);

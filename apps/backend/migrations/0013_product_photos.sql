@@ -4,3 +4,4 @@ CREATE TABLE IF NOT EXISTS product_photos (
   data BLOB NOT NULL,
   created INTEGER NOT NULL
 );
+
