@@ -343,13 +343,13 @@ document.addEventListener('visibilitychange',()=>{
 });
 function showProfile(current) {
   profile=current;
-  const displayName=profile ? (profile.name || (profile.username ? '@'+profile.username : 'My profile')) : 'Welcome!';
+  const displayName=profile ? (profile.name || profile.username || 'My profile') : 'Welcome!';
   get('profile-name').textContent=displayName;
   get('profile-avatar').textContent=(profile ? (profile.name || profile.username || profile.email) : 'M').trim().charAt(0).toUpperCase() || 'M';
   const badge=get('profile-badge');
-  badge.textContent=profile ? (profile.username ? '@'+profile.username : 'Signed in') : 'Guest';
+  badge.textContent=profile ? '✓ Verified' : 'Guest';
   badge.classList.toggle('signed-in',Boolean(profile));
-  get('account').textContent=profile ? profile.email : 'Sign in to save your delivery details and track orders.';
+  get('account').textContent=profile ? (profile.username && profile.name && profile.username !== profile.name ? profile.username + ' · ' + profile.email : profile.email) : 'Sign in to save your delivery details and track orders.';
   get('logout').hidden=!profile;
   get('profile-signin').hidden=Boolean(profile);
   get('checkout-signin').hidden=Boolean(profile);

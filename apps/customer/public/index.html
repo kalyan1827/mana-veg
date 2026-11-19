@@ -5,7 +5,7 @@
 <header><a class="brand" href="#home"><img src="/logo.jpg" alt="Manakurgayalu logo" width="44" height="44"><span><strong>Manakurgayalu</strong><small>Fresh local vegetables</small></span></a><nav hidden aria-label="Shop navigation"><a href="#home"><svg class="footer-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-7 9 7v10H3z M9 20v-6h6v6"></path></svg>Home</a><a href="#categories"><svg class="footer-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"></path></svg>Categories</a><a href="#cart"><svg class="footer-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h3l3 12h11l3-8H6 M9 20h.01 M18 20h.01"></path></svg>Cart <span id="cart-count"></span></a><a href="#orders"><svg class="footer-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z M9 8h6 M9 12h6"></path></svg>Orders</a><a href="#profile"><svg class="footer-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a5 5 0 0 0-5-5H9a5 5 0 0 0-5 5v2 M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0"></path></svg>Profile</a></nav></header>
 <main>
 <output id="notice" aria-live="polite"></output>
-<section data-page="home" hidden><div class="hero"><p class="badge">Bowenpally delivery · under 20 km</p><h1>Fresh vegetables & everyday essentials</h1><a href="#delivery">Check delivery</a></div><div class="shop-search"><input id="shop-search" type="search" aria-label="Search vegetables and groceries" placeholder="Search vegetables and groceries"></div><h2>Shop all products</h2><p id="catalog-mode" hidden>Demo catalog · sample prices and stock</p><div id="products" class="grid"></div></section>
+<section data-page="home" hidden><div class="hero"><p class="badge">Farm-fresh daily · Doorstep delivery</p><h1>Fresh vegetables & everyday essentials</h1></div><div class="shop-search"><input id="shop-search" type="search" aria-label="Search vegetables and groceries" placeholder="Search vegetables and groceries"></div><h2>Shop all products</h2><p id="catalog-mode" hidden>Demo catalog · sample prices and stock</p><div id="products" class="grid"></div></section>
 <section data-page="delivery" hidden>
   <div class="delivery-hero">
     <p class="badge">Gandhinagar, Bowenpally · 20 km radius</p>
@@ -45,7 +45,7 @@
   </div>
   <form class="panel checkout-card" id="checkout" hidden>
     <h2>Delivery &amp; checkout</h2>
-    <p class="checkout-hint">Confirm your location and delivery window to place your order.</p>
+    <p class="checkout-hint">Fresh delivery within 20 km of Bowenpally. Confirm your address and time slot to place your order.</p>
     <div class="checkout-section">
       <h3>1. Delivery location</h3>
       <input type="hidden" name="lat"><input type="hidden" name="lon">
@@ -53,7 +53,7 @@
         <button type="button" id="use-saved" class="cta-outline">Use saved address</button>
         <button type="button" id="locate" class="cta-outline">Use my current location</button>
       </div>
-      <p id="delivery-status" class="status-banner" aria-live="polite"></p>
+      <p id="delivery-status" class="status-banner" aria-live="polite">Delivery available within 20 km of Bowenpally. Check your location to proceed.</p>
     </div>
     <div class="checkout-section">
       <h3>2. Address &amp; contact</h3>

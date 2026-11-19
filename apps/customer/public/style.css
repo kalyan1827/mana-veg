@@ -1348,7 +1348,11 @@ body.has-cart-bar.has-delivery-progress {
 .profile-pill.signed-in {
   background: var(--cream);
   color: var(--walnut);
-  border-color: var(--accent)
+  border-color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  letter-spacing: .01em;
 }
 
 [data-page=profile] #account {
