@@ -278,6 +278,28 @@ test('publishing ₹30 per kg creates all three priced variants and checkout cha
   assert.equal(updated.find(pack=>pack.id===kilo.id).price,4800);
   assert.equal(updated.find(pack=>pack.id===kilo.id).stock,3);
 });
+test('photo upload falls back seamlessly to D1 database when R2 storage is unavailable', async () => {
+  const DB=localDatabase();
+  const admin=await issueSession(DB,'staff@example.test','admin');
+  const origin='https://admin.manakuragayalu.workers.dev';
+  const form=new FormData();
+  form.set('name','Organic Palakura');
+  form.set('category','vegetables');
+  form.set('pricing','fixed');
+  form.set('unit','1 bundle');
+  form.set('price','15');
+  form.set('stock','20');
+  form.set('photo',new File([new Uint8Array([137,80,78,71])],'palakura.png',{type:'image/png'}));
+  // Call backend with NO PHOTOS (photos = undefined)
+  const call=(path,options={})=>backend.fetch(new Request(origin+path,options),{DB,PHOTOS:undefined});
+  const published=await call('/api/admin/catalog',{method:'POST',headers:{Origin:origin,Cookie:admin.split(';')[0]},body:form});
+  assert.equal(published.status,201);
+  const {id}=await published.json();
+  const photo=await call('/api/photos/'+id);
+  assert.equal(photo.status,200);
+  assert.equal(photo.headers.get('content-type'),'image/png');
+  assert.deepEqual([...new Uint8Array(await photo.arrayBuffer())],[137,80,78,71]);
+});
 test('admin targets a coupon by username and checkout reserves and releases its budget',async()=>{
   const DB=localDatabase();
   await DB.prepare('UPDATE users SET username=? WHERE email=?').bind('FreshShopper','shopper@example.test').run();

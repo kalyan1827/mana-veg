@@ -83,7 +83,11 @@ for(const [name,input] of Object.entries(authFields)) {
 function change(product,quantity) {
   if(quantity>Math.min(product.stock,50)) return notice('No more packs available.');
   if(quantity<=0) cart.delete(product.id);
-  else cart.set(product.id,{product,quantity});
+  else {
+    // Re-insert so this item is placed at the end of the Map (latest added)
+    cart.delete(product.id);
+    cart.set(product.id,{product,quantity});
+  }
   coupon=undefined;
   get('coupon-status').textContent=checkout.elements.coupon.value ? 'Cart changed. Apply the coupon again.' : '';
   drawCart();
@@ -98,18 +102,26 @@ function updateDeliveryProgress(cartBarVisible) {
   const threshold=catalog?.freeDeliveryThreshold;
   const hasOffer=Number.isSafeInteger(threshold) && threshold>=0 && catalog.fee>0;
   for(const bar of deliveryProgressBars) {
-    bar.hidden=!hasOffer || bar.parentElement.hidden;
+    bar.hidden=!hasOffer || bar.closest('#cart-bar, #cart-checkout-bar')?.hidden;
     if(bar.hidden) continue;
     // Prices are in paise and the subtotal must exceed the published threshold.
     const goal=threshold+1;
     const amount=Math.max(0,discountedSubtotal());
     const remaining=Math.max(0,goal-amount);
     const progress=bar.querySelector('progress');
-    progress.max=goal;
-    progress.value=Math.min(amount,goal);
+    if(progress) {
+      progress.max=goal;
+      progress.value=Math.min(amount,goal);
+    }
     const status=bar.querySelector('.delivery-progress-status');
-    const message=remaining ? 'Add '+money(remaining)+' more for free delivery' : 'Free delivery unlocked';
-    if(status.textContent!==message) status.textContent=message;
+    const message=remaining ? 'Add '+money(remaining)+' more for free delivery' : '🎉 Free delivery unlocked!';
+    if(status && status.textContent!==message) status.textContent=message;
+    const fill=bar.querySelector('.cart-bar-progress-fill');
+    if(fill) {
+      const pct=Math.min(100,Math.round((amount/goal)*100));
+      fill.style.width=pct+'%';
+      fill.classList.toggle('unlocked',!remaining);
+    }
   }
   document.body.classList.toggle('has-delivery-progress',cartBarVisible && hasOffer);
   deliveryOfferBanner.hidden=!hasOffer || cartBarVisible || document.querySelector('header nav').hidden;
@@ -121,11 +133,35 @@ function updateDeliveryProgress(cartBarVisible) {
   }
 }
 function updateCartBar() {
-  const count=[...cart.values()].reduce((sum,item)=>sum+item.quantity,0);
-  get('cart-bar-count').textContent=count+' '+(count===1 ? 'pack' : 'packs')+' added';
+  const items=[...cart.values()];
+  const count=items.reduce((sum,item)=>sum+item.quantity,0);
+  get('cart-bar-count').textContent=count+' '+(count===1 ? 'item' : 'items')+' · '+money(subtotal());
   get('cart-bar').hidden=!count || !['#home','#categories'].includes(location.hash);
   get('cart-checkout-bar').hidden=!count || location.hash!=='#cart';
   get('cart-pay-total').textContent=count ? money(payable()) : '';
+
+  const thumbsContainer=get('cart-pill-thumbs');
+  if(thumbsContainer) {
+    if(count>0) {
+      // Up to latest 3 unique products added (natural DOM stacking order matches reference)
+      const latestItems=items.slice(-3);
+      thumbsContainer.replaceChildren(
+        ...latestItems.map(({ product })=>{
+          const img=document.createElement('img');
+          img.className='cart-pill-thumb';
+          img.alt=product.name;
+          img.src=productPhotoUrl(product);
+          img.onerror=()=>{ img.style.display='none'; };
+          return img;
+        })
+      );
+      thumbsContainer.hidden=false;
+    } else {
+      thumbsContainer.replaceChildren();
+      thumbsContainer.hidden=true;
+    }
+  }
+
   const cartBarVisible=!get('cart-bar').hidden || !get('cart-checkout-bar').hidden;
   updateDeliveryProgress(cartBarVisible);
   document.body.classList.toggle('has-cart-bar',cartBarVisible || !deliveryOfferBanner.hidden);

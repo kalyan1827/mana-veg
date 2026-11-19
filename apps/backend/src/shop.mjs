@@ -51,11 +51,28 @@ export async function shopRoutes(request, db, path, reply, photos, demo = false,
   const photoId = /^\/api\/photos\/([a-zA-Z0-9-]{1,80})$/.exec(path)?.[1];
   if (photoId && method === 'GET') {
     const product = await db.prepare('SELECT photo FROM products WHERE id=? AND active=1').bind(photoId).first();
-    const object = product?.photo && await photos?.get(product.photo);
-    return object ? new Response(object.body, { headers: {
-      'Content-Type': object.httpMetadata.contentType, 'X-Content-Type-Options': 'nosniff',
-      'Cache-Control': 'no-cache'
-    } }) : reply({ error: 'Photo not found' }, 404);
+    const photoKey = product?.photo || photoId;
+    if (photos) {
+      try {
+        const object = await photos.get(photoKey);
+        if (object) {
+          return new Response(object.body, { headers: {
+            'Content-Type': object.httpMetadata?.contentType || 'image/jpeg', 'X-Content-Type-Options': 'nosniff',
+            'Cache-Control': 'public, max-age=86400'
+          } });
+        }
+      } catch {}
+    }
+    try {
+      const dbPhoto = await db.prepare('SELECT content_type, data FROM product_photos WHERE id=?').bind(photoKey).first();
+      if (dbPhoto?.data) {
+        return new Response(dbPhoto.data, { headers: {
+          'Content-Type': dbPhoto.content_type || 'image/jpeg', 'X-Content-Type-Options': 'nosniff',
+          'Cache-Control': 'public, max-age=86400'
+        } });
+      }
+    } catch {}
+    return reply({ error: 'Photo not found' }, 404);
   }
   if (path === '/api/catalog' && method === 'GET') {
     const products = await getRows(db.prepare(`SELECT p.id,p.name,p.unit,p.price,p.stock,p.pack_group,p.kilo_price,p.tags,p.original_price,p.photo,p.photo IS NOT NULL AS has_photo,c.name AS category
@@ -222,9 +239,14 @@ export async function shopRoutes(request, db, path, reply, photos, demo = false,
       if (photo.size > 2 * 1024 * 1024 || !['image/jpeg','image/png','image/webp'].includes(photo.type)) {
         return reply({ error: 'Choose a JPEG, PNG or WebP image up to 2 MB' }, 400);
       }
-      if (!photos) return reply({ error: 'Photo storage is unavailable' }, 503);
       if (!await db.prepare('SELECT id FROM categories WHERE id=?').bind(input.category).first()) return reply({ error: 'Unknown category' }, 400);
-      await photos.put(photoKey, await photo.arrayBuffer(), { httpMetadata: { contentType: photo.type } });
+      const buffer = await photo.arrayBuffer();
+      if (photos) {
+        await photos.put(photoKey, buffer, { httpMetadata: { contentType: photo.type } });
+      } else {
+        await db.prepare('CREATE TABLE IF NOT EXISTS product_photos (id TEXT PRIMARY KEY, content_type TEXT NOT NULL, data BLOB NOT NULL, created INTEGER NOT NULL)').run();
+        await db.prepare('INSERT OR REPLACE INTO product_photos(id, content_type, data, created) VALUES (?, ?, ?, ?)').bind(photoKey, photo.type, new Uint8Array(buffer), Date.now()).run();
+      }
     }
     let product;
     try {
@@ -263,7 +285,12 @@ export async function shopRoutes(request, db, path, reply, photos, demo = false,
         SELECT ?,id,?,?,?,?,1,?,?,? FROM categories WHERE id=? RETURNING id`)
         .bind(id,name,unit,effective,input.stock,hasPhoto ? id : null,storedTags,discount ? input.price : null,input.category).first();
     } finally {
-      if (hasPhoto && !product) await photos.delete(photoKey);
+      if (hasPhoto && !product) {
+        if (photos) await photos.delete(photoKey);
+        else {
+          try { await db.prepare('DELETE FROM product_photos WHERE id=?').bind(photoKey).run(); } catch {}
+        }
+      }
     }
     return product ? reply({ id }, editId ? 200 : 201) :
       editId ? reply({error:'Stock or category changed. Reload the catalog and try again.'},409) : reply({error:'Unknown category'},400);

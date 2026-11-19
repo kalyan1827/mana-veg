@@ -199,14 +199,29 @@
   </svg>
   <span id="delivery-offer-message"></span>
 </div>
-<a id="cart-bar" class="cart-bar" href="#cart" hidden>
-  <span class="delivery-progress" hidden>
-    <span class="delivery-progress-status" aria-live="polite"></span>
-    <progress aria-label="Progress toward free delivery"></progress>
-  </span>
-  <span aria-hidden="true">🛒</span>
-  <span id="cart-bar-count" aria-live="polite"></span>
-  <strong>View cart</strong>
+<a id="cart-bar" class="cart-floating-bar" href="#cart" hidden>
+  <div class="cart-bar-progress delivery-progress" hidden>
+    <div class="cart-bar-progress-label">
+      <span class="delivery-bike-icon" aria-hidden="true">🚚</span>
+      <span class="delivery-progress-status" aria-live="polite"></span>
+    </div>
+    <div class="cart-bar-progress-track">
+      <div class="cart-bar-progress-fill"></div>
+    </div>
+    <progress class="delivery-progress-native" aria-label="Progress toward free delivery" hidden></progress>
+  </div>
+  <div class="cart-bar-pill">
+    <div id="cart-pill-thumbs" class="cart-pill-thumbs"></div>
+    <div class="cart-pill-text">
+      <strong class="cart-pill-title">View cart</strong>
+      <span id="cart-bar-count" class="cart-pill-meta" aria-live="polite"></span>
+    </div>
+    <div class="cart-pill-arrow" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.8" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"></polyline>
+      </svg>
+    </div>
+  </div>
 </a>
 <div id="cart-checkout-bar" class="cart-bar cart-checkout-bar" hidden>
   <span class="delivery-progress" hidden>

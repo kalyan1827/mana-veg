@@ -17,6 +17,7 @@ export function localDatabase() {
   sqlite.exec(readFileSync(new URL('../apps/backend/migrations/0010_free_delivery.sql',import.meta.url),'utf8'));
   sqlite.exec(readFileSync(new URL('../apps/backend/migrations/0011_admin_passwords.sql',import.meta.url),'utf8'));
   sqlite.exec(readFileSync(new URL('../apps/backend/migrations/0012_next_day_delivery.sql',import.meta.url),'utf8'));
+  sqlite.exec(readFileSync(new URL('../apps/backend/migrations/0013_product_photos.sql',import.meta.url),'utf8'));
   sqlite.exec("DELETE FROM products WHERE id IN ('tomato','onions')");
   const insertPack = sqlite.prepare(`INSERT INTO products
     (id,category,name,unit,price,stock,active,photo,pack_group,kilo_price)
@@ -30,6 +31,6 @@ export function localDatabase() {
     return { bind(...args) {
       const statement=sqlite.prepare(sql);
       return { first:async()=>statement.get(...args) ?? null, all:async()=>({results:statement.all(...args)}), run:async()=>statement.run(...args) };
-    }, all() { return this.bind().all(); }, first() { return this.bind().first(); } };
+    }, all() { return this.bind().all(); }, first() { return this.bind().first(); }, run() { return this.bind().run(); } };
   } };
 }

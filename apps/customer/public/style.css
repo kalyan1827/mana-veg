@@ -872,6 +872,180 @@ button:enabled:hover,
   --cart-cream-border: #c4dccb
 }
 
+/* Floating Cart Container */
+.cart-floating-bar,
+#cart-bar {
+  position: fixed;
+  z-index: 95;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(4.3rem + env(safe-area-inset-bottom));
+  width: min(calc(100% - 1.25rem), 440px);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  border-radius: 28px;
+  pointer-events: auto;
+  transition: transform .2s cubic-bezier(0.16, 1, 0.3, 1), opacity .2s ease;
+}
+
+.cart-floating-bar:active,
+#cart-bar:active {
+  transform: translateX(-50%) scale(0.985);
+}
+
+/* Progress bar inside floating cart */
+.cart-bar-progress {
+  background: #ffffff;
+  border: 1px solid #c8e6d2;
+  border-bottom: none;
+  border-radius: 16px 16px 0 0;
+  padding: .4rem .85rem .35rem;
+  box-shadow: 0 4px 12px rgba(27, 122, 55, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+}
+
+.cart-bar-progress-label {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .78rem;
+  font-weight: 700;
+  color: #1b7a37;
+  line-height: 1.2;
+}
+
+.cart-bar-progress-label .delivery-bike-icon {
+  font-size: .95rem;
+  line-height: 1;
+}
+
+.cart-bar-progress-track {
+  width: 100%;
+  height: 5px;
+  background: #eef7f0;
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.cart-bar-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #1b7a37 0%, #34d399 100%);
+  border-radius: 999px;
+  transition: width .35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cart-bar-progress-fill.unlocked {
+  background: linear-gradient(90deg, #16a34a 0%, #22c55e 100%);
+}
+
+/* Floating Cart Main Pill */
+.cart-bar-pill {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, #1b7a37 0%, #15622c 100%);
+  color: #ffffff;
+  border-radius: 28px;
+  padding: .45rem .75rem;
+  box-shadow: 0 8px 24px rgba(20, 39, 24, 0.32), 0 2px 6px rgba(0, 0, 0, 0.12);
+  min-height: 54px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* When progress bar is attached on top */
+.cart-bar-progress:not([hidden]) + .cart-bar-pill {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-top: none;
+}
+
+/* Overlapping Circular Thumbnails */
+.cart-pill-thumbs {
+  display: flex;
+  align-items: center;
+  padding-left: .15rem;
+  margin-right: .7rem;
+  flex-shrink: 0;
+}
+
+.cart-pill-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2.5px solid #ffffff;
+  background: #ffffff;
+  object-fit: contain;
+  margin-left: -12px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.22);
+  display: block;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.cart-pill-thumb:first-child {
+  margin-left: 0;
+}
+
+/* Cart text info */
+.cart-pill-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: .1rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.cart-pill-title {
+  color: #ffffff !important;
+  font-size: .95rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: .2px;
+}
+
+.cart-pill-meta {
+  color: #dcfce7 !important;
+  font-size: .78rem;
+  font-weight: 600;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Right circular arrow button */
+.cart-pill-arrow {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  flex-shrink: 0;
+  margin-left: .5rem;
+  margin-right: .15rem;
+  transition: background .15s ease, transform .15s ease;
+}
+
+.cart-floating-bar:hover .cart-pill-arrow {
+  background: rgba(255, 255, 255, 0.32);
+  transform: translateX(2px);
+}
+
 .cart-bar {
   position: fixed;
   z-index: 3;

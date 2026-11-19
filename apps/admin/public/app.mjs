@@ -155,6 +155,7 @@ async function loadCatalog() {
     categoryInput.value=category?.id ?? '';
     current.textContent=category?.name ?? 'No categories available';
     picker.open=false;
+    clearFieldError('publish-category-error', null);
   }
   get('categories').replaceChildren(...categories.map(category=>{
     const option=text('button',category.name);
@@ -290,6 +291,18 @@ function adminPhotoUrl(product) {
     return card;
   }));
 }
+function setFieldError(errorId, inputElement, message) {
+  const errorEl = get(errorId);
+  if (errorEl) errorEl.textContent = message;
+  if (inputElement) inputElement.setAttribute('aria-invalid', 'true');
+}
+
+function clearFieldError(errorId, inputElement) {
+  const errorEl = get(errorId);
+  if (errorEl) errorEl.textContent = '';
+  if (inputElement) inputElement.removeAttribute('aria-invalid');
+}
+
 const publishForm = get('publish');
 let editing;
 function resetPublishForm() {
@@ -297,6 +310,12 @@ function resetPublishForm() {
   publishForm.reset();
   get('publish-action').textContent='Publish vegetable';
   get('cancel-edit').hidden=true;
+  ['publish-photo-error','publish-name-error','publish-category-error','publish-unit-error','publish-price-error','publish-stock250-error','publish-stock500-error','publish-stock-error','publish-discount-error','publish-general-error'].forEach(id => {
+    const el = get(id);
+    if (el) el.textContent = '';
+  });
+  publishForm.querySelectorAll('[aria-invalid]').forEach(el => el.removeAttribute('aria-invalid'));
+  get('upload-tile-label')?.classList.remove('has-error');
   previewPhoto();
   previewPricing();
 }
@@ -315,11 +334,20 @@ function previewPricing() {
   unit.required = !byWeight;
   stock250.required = byWeight;
   stock500.required = byWeight;
+  if (byWeight) {
+    clearFieldError('publish-unit-error', unit);
+  } else {
+    clearFieldError('publish-stock250-error', stock250);
+    clearFieldError('publish-stock500-error', stock500);
+  }
   get('price-caption').textContent = byWeight ? 'Price per kg (₹)' : 'Price per pack (₹)';
   get('stock-label').textContent = byWeight ? '1 kg packs in stock' : 'Packs in stock';
   get('discount-field').hidden=!offer.checked;
   discount.disabled=!offer.checked;
   discount.required=offer.checked;
+  if (!offer.checked) {
+    clearFieldError('publish-discount-error', discount);
+  }
   get('discount-caption').textContent=byWeight ? 'Discount on the 1 kg pack (₹)' : 'Discount off each pack (₹)';
   const base=Math.round(Number(price.value)*100);
   const amount=offer.checked ? Math.round(Number(discount.value || NaN)*100) : 0;
@@ -333,16 +361,203 @@ function previewPricing() {
 }
 let previewUrl;
 function previewPhoto() {
-  if(previewUrl) URL.revokeObjectURL(previewUrl);
-  const image=get('upload-preview');
-  const file=publishForm.elements.photo.files[0];
-  image.hidden=!file && !editing?.photo;
-  get('upload-caption').textContent=image.hidden ? 'Upload product photo' : 'Change photo';
-  previewUrl=file ? URL.createObjectURL(file) : undefined;
-  if(previewUrl || editing?.photo) image.src=previewUrl ?? editing.photo;
+  const photoInput = publishForm.elements.photo;
+  const file = photoInput.files[0];
+  const photoError = get('publish-photo-error');
+  const uploadTile = get('upload-tile-label');
+
+  if (file) {
+    const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+    if (file.size > 2 * 1024 * 1024) {
+      photoError.textContent = `⚠️ Photo size is ${sizeMB} MB. Please upload an image less than 2 MB.`;
+      uploadTile?.classList.add('has-error');
+      photoInput.setAttribute('aria-invalid', 'true');
+      photoInput.value = '';
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewUrl = undefined;
+      const image = get('upload-preview');
+      image.hidden = !editing?.photo;
+      if (editing?.photo) image.src = editing.photo;
+      else image.removeAttribute('src');
+      get('upload-caption').textContent = editing?.photo ? 'Change photo' : 'Upload product photo';
+      return;
+    }
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      photoError.textContent = '⚠️ Invalid file type. Please upload a JPG, PNG, or WebP photo.';
+      uploadTile?.classList.add('has-error');
+      photoInput.setAttribute('aria-invalid', 'true');
+      photoInput.value = '';
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewUrl = undefined;
+      return;
+    }
+
+    photoError.textContent = '';
+    uploadTile?.classList.remove('has-error');
+    photoInput.removeAttribute('aria-invalid');
+  } else {
+    if (!uploadTile?.classList.contains('has-error')) {
+      photoError.textContent = '';
+      photoInput.removeAttribute('aria-invalid');
+    }
+  }
+
+  if (previewUrl) URL.revokeObjectURL(previewUrl);
+  const image = get('upload-preview');
+  image.hidden = !file && !editing?.photo;
+  get('upload-caption').textContent = image.hidden ? 'Upload product photo' : 'Change photo';
+  previewUrl = file ? URL.createObjectURL(file) : undefined;
+  if (previewUrl || editing?.photo) image.src = previewUrl ?? editing.photo;
   else image.removeAttribute('src');
 }
-publishForm.elements.photo.addEventListener('change',previewPhoto);
+publishForm.elements.photo.addEventListener('change', previewPhoto);
+
+function validatePublishForm() {
+  let isValid = true;
+  let firstInvalid = null;
+
+  function markInvalid(errorId, inputElement, message) {
+    isValid = false;
+    setFieldError(errorId, inputElement, message);
+    if (!firstInvalid && inputElement) {
+      firstInvalid = inputElement;
+    }
+  }
+
+  const { name, category, pricing, unit, price, stock250, stock500, stock, offer, discount, photo } = publishForm.elements;
+  const byWeight = pricing.value === 'weight';
+
+  const photoFile = photo.files[0];
+  if (photoFile) {
+    if (photoFile.size > 2 * 1024 * 1024) {
+      const sizeMB = (photoFile.size / (1024 * 1024)).toFixed(2);
+      markInvalid('publish-photo-error', photo, `⚠️ Photo size is ${sizeMB} MB. Please upload an image less than 2 MB.`);
+      get('upload-tile-label')?.classList.add('has-error');
+    } else if (!['image/jpeg', 'image/png', 'image/webp'].includes(photoFile.type)) {
+      markInvalid('publish-photo-error', photo, '⚠️ Please upload a JPG, PNG, or WebP photo.');
+      get('upload-tile-label')?.classList.add('has-error');
+    }
+  }
+
+  const nameVal = name.value.trim();
+  if (!nameVal) {
+    markInvalid('publish-name-error', name, 'Please enter vegetable name.');
+  } else if (nameVal.length > 100) {
+    markInvalid('publish-name-error', name, 'Name must be 100 characters or less.');
+  } else {
+    clearFieldError('publish-name-error', name);
+  }
+
+  if (!category.value) {
+    markInvalid('publish-category-error', null, 'Please select a category.');
+    if (!firstInvalid) firstInvalid = get('category-current');
+  } else {
+    clearFieldError('publish-category-error', null);
+  }
+
+  if (!byWeight) {
+    const unitVal = unit.value.trim();
+    if (!unitVal) {
+      markInvalid('publish-unit-error', unit, 'Please enter pack size (e.g. 6 eggs, 1 bundle).');
+    } else {
+      clearFieldError('publish-unit-error', unit);
+    }
+  } else {
+    clearFieldError('publish-unit-error', unit);
+  }
+
+  const priceVal = price.value.trim();
+  const priceNum = Number(priceVal);
+  if (!priceVal) {
+    markInvalid('publish-price-error', price, 'Please enter price in rupees (e.g. 40 or 35.50).');
+  } else if (isNaN(priceNum) || priceNum <= 0) {
+    markInvalid('publish-price-error', price, 'Please enter a valid price greater than ₹0.');
+  } else {
+    clearFieldError('publish-price-error', price);
+  }
+
+  if (byWeight) {
+    const s250Val = stock250.value.trim();
+    const s250Num = Number(s250Val);
+    if (!s250Val || isNaN(s250Num) || s250Num < 0 || !Number.isInteger(s250Num)) {
+      markInvalid('publish-stock250-error', stock250, 'Please enter 250 g packs in stock (0 or more).');
+    } else {
+      clearFieldError('publish-stock250-error', stock250);
+    }
+
+    const s500Val = stock500.value.trim();
+    const s500Num = Number(s500Val);
+    if (!s500Val || isNaN(s500Num) || s500Num < 0 || !Number.isInteger(s500Num)) {
+      markInvalid('publish-stock500-error', stock500, 'Please enter 500 g packs in stock (0 or more).');
+    } else {
+      clearFieldError('publish-stock500-error', stock500);
+    }
+  } else {
+    clearFieldError('publish-stock250-error', stock250);
+    clearFieldError('publish-stock500-error', stock500);
+  }
+
+  const stockVal = stock.value.trim();
+  const stockNum = Number(stockVal);
+  if (!stockVal || isNaN(stockNum) || stockNum < 0 || !Number.isInteger(stockNum)) {
+    markInvalid('publish-stock-error', stock, byWeight ? 'Please enter 1 kg packs in stock (0 or more).' : 'Please enter packs in stock (0 or more).');
+  } else {
+    clearFieldError('publish-stock-error', stock);
+  }
+
+  if (offer.checked) {
+    const discVal = discount.value.trim();
+    const discNum = Number(discVal);
+    if (!discVal) {
+      markInvalid('publish-discount-error', discount, 'Please enter discount amount in rupees.');
+    } else if (isNaN(discNum) || discNum <= 0) {
+      markInvalid('publish-discount-error', discount, 'Please enter a valid discount greater than ₹0.');
+    } else if (priceNum && discNum >= priceNum) {
+      markInvalid('publish-discount-error', discount, `Discount (₹${discNum}) must be less than price (₹${priceNum}).`);
+    } else {
+      clearFieldError('publish-discount-error', discount);
+    }
+  } else {
+    clearFieldError('publish-discount-error', discount);
+  }
+
+  if (!isValid && firstInvalid) {
+    firstInvalid.focus();
+  }
+
+  return isValid;
+}
+
+publishForm.elements.name.addEventListener('input', () => {
+  if (publishForm.elements.name.value.trim()) clearFieldError('publish-name-error', publishForm.elements.name);
+});
+publishForm.elements.unit.addEventListener('input', () => {
+  if (publishForm.elements.unit.value.trim()) clearFieldError('publish-unit-error', publishForm.elements.unit);
+});
+publishForm.elements.price.addEventListener('input', () => {
+  const num = Number(publishForm.elements.price.value.trim());
+  if (!isNaN(num) && num > 0) clearFieldError('publish-price-error', publishForm.elements.price);
+});
+publishForm.elements.stock.addEventListener('input', () => {
+  const num = Number(publishForm.elements.stock.value.trim());
+  if (!isNaN(num) && num >= 0 && Number.isInteger(num)) clearFieldError('publish-stock-error', publishForm.elements.stock);
+});
+publishForm.elements.stock250.addEventListener('input', () => {
+  const num = Number(publishForm.elements.stock250.value.trim());
+  if (!isNaN(num) && num >= 0 && Number.isInteger(num)) clearFieldError('publish-stock250-error', publishForm.elements.stock250);
+});
+publishForm.elements.stock500.addEventListener('input', () => {
+  const num = Number(publishForm.elements.stock500.value.trim());
+  if (!isNaN(num) && num >= 0 && Number.isInteger(num)) clearFieldError('publish-stock500-error', publishForm.elements.stock500);
+});
+publishForm.elements.discount.addEventListener('input', () => {
+  const num = Number(publishForm.elements.discount.value.trim());
+  const pNum = Number(publishForm.elements.price.value.trim());
+  if (!isNaN(num) && num > 0 && (!pNum || num < pNum)) clearFieldError('publish-discount-error', publishForm.elements.discount);
+});
+
 get('category-picker').addEventListener('keydown',event=>{
   if(event.key==='Escape') {
     get('category-picker').open=false;
@@ -368,6 +583,8 @@ pricingPicker.addEventListener('keydown',event=>{
 previewPricing();
 publishForm.onsubmit=async event=>{
   event.preventDefault();
+  get('publish-general-error').textContent = '';
+  if (!validatePublishForm()) return;
   event.submitter.disabled=true;
   try {
     const body=new FormData(publishForm);
@@ -377,7 +594,15 @@ publishForm.onsubmit=async event=>{
     resetPublishForm();
     await loadCatalog();
     notice(target ? 'Product updated and published.' : 'Vegetable published.');
-  } catch(error) { notice(error.message); }
+  } catch(error) {
+    if (error.message && error.message.toLowerCase().includes('photo')) {
+      setFieldError('publish-photo-error', publishForm.elements.photo, error.message);
+      get('upload-tile-label')?.classList.add('has-error');
+    } else {
+      get('publish-general-error').textContent = error.message;
+    }
+    notice(error.message);
+  }
   finally { event.submitter.disabled=false; }
 };
 async function refreshVisibleBookings() {
@@ -410,13 +635,32 @@ async function loadDeliveryOffer() {
     status.textContent='Could not load the delivery offer. '+error.message;
   }
 }
+deliveryOfferForm.elements.threshold.addEventListener('input', () => {
+  const val = deliveryOfferForm.elements.threshold.value.trim();
+  const num = Number(val);
+  if (val && !isNaN(num) && num >= 0) clearFieldError('delivery-offer-error', deliveryOfferForm.elements.threshold);
+});
 deliveryOfferForm.onsubmit=async event=>{
   event.preventDefault();
+  const input=deliveryOfferForm.elements.threshold;
+  const val=input.value.trim();
+  const num=Number(val);
+  if (!val) {
+    setFieldError('delivery-offer-error', input, 'Please enter minimum cart amount for free delivery.');
+    input.focus();
+    return;
+  }
+  if (isNaN(num) || num < 0) {
+    setFieldError('delivery-offer-error', input, 'Please enter a valid amount in rupees (e.g. 500).');
+    input.focus();
+    return;
+  }
+  clearFieldError('delivery-offer-error', input);
   const button=get('save-delivery-offer');
   const status=get('delivery-offer-status');
   button.disabled=true;
   try {
-    const threshold=Math.round(Number(deliveryOfferForm.elements.threshold.value)*100);
+    const threshold=Math.round(num*100);
     const saved=await api('admin/delivery-offer',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({threshold})});
     status.textContent='Published. Free delivery for subtotals above '+money(saved.threshold)+'.';
   } catch(error) {status.textContent=error.message;}
@@ -483,8 +727,75 @@ async function loadCoupons() {
     (audiences.find(option=>option.id===coupon.audience)?.label ?? coupon.audience)+' · '+money(coupon.budget-coupon.used)+' remaining')));
   if(!coupons.length) get('coupon-list').textContent='No coupons yet.';
 }
+
+couponForm.elements.code.addEventListener('input', () => {
+  if (couponForm.elements.code.value.trim()) clearFieldError('coupon-code-error', couponForm.elements.code);
+});
+couponForm.elements.discount.addEventListener('input', () => {
+  const num = Number(couponForm.elements.discount.value.trim());
+  if (!isNaN(num) && num > 0) clearFieldError('coupon-discount-error', couponForm.elements.discount);
+});
+couponForm.elements.budget.addEventListener('input', () => {
+  const num = Number(couponForm.elements.budget.value.trim());
+  if (!isNaN(num) && num > 0) clearFieldError('coupon-budget-error', couponForm.elements.budget);
+});
+
 couponForm.onsubmit=async event=>{
   event.preventDefault();
+  const { code, discount, budget } = couponForm.elements;
+  let valid = true;
+  let firstInvalid = null;
+
+  const codeVal = code.value.trim();
+  if (!codeVal) {
+    setFieldError('coupon-code-error', code, 'Please enter coupon code.');
+    valid = false;
+    if (!firstInvalid) firstInvalid = code;
+  } else if (!/^[a-zA-Z0-9\-]{3,32}$/.test(codeVal)) {
+    setFieldError('coupon-code-error', code, 'Coupon code must be 3-32 letters, numbers, or hyphens.');
+    valid = false;
+    if (!firstInvalid) firstInvalid = code;
+  } else {
+    clearFieldError('coupon-code-error', code);
+  }
+
+  const discVal = discount.value.trim();
+  const discNum = Number(discVal);
+  if (!discVal) {
+    setFieldError('coupon-discount-error', discount, 'Please enter discount per order.');
+    valid = false;
+    if (!firstInvalid) firstInvalid = discount;
+  } else if (isNaN(discNum) || discNum <= 0) {
+    setFieldError('coupon-discount-error', discount, 'Please enter a valid discount greater than ₹0.');
+    valid = false;
+    if (!firstInvalid) firstInvalid = discount;
+  } else {
+    clearFieldError('coupon-discount-error', discount);
+  }
+
+  const budgetVal = budget.value.trim();
+  const budgetNum = Number(budgetVal);
+  if (!budgetVal) {
+    setFieldError('coupon-budget-error', budget, 'Please enter total budget for coupon.');
+    valid = false;
+    if (!firstInvalid) firstInvalid = budget;
+  } else if (isNaN(budgetNum) || budgetNum <= 0) {
+    setFieldError('coupon-budget-error', budget, 'Please enter a valid budget greater than ₹0.');
+    valid = false;
+    if (!firstInvalid) firstInvalid = budget;
+  } else if (discNum && budgetNum < discNum) {
+    setFieldError('coupon-budget-error', budget, `Budget must be at least ₹${discNum} (the discount amount).`);
+    valid = false;
+    if (!firstInvalid) firstInvalid = budget;
+  } else {
+    clearFieldError('coupon-budget-error', budget);
+  }
+
+  if (!valid) {
+    if (firstInvalid) firstInvalid.focus();
+    return;
+  }
+
   const button=get('publish-coupon');
   const status=get('coupon-status');
   if(button.disabled) return;
@@ -498,12 +809,17 @@ couponForm.onsubmit=async event=>{
   status.textContent='Publishing coupon…';
   try {
     await api('admin/coupons',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      code:fields.get('code'),discount:Math.round(Number(fields.get('discount'))*100),
-      budget:Math.round(Number(fields.get('budget'))*100),
+      code:codeVal,discount:Math.round(discNum*100),
+      budget:Math.round(budgetNum*100),
       customers:audience.requiresCustomers ? [...selectedCustomers.keys()] : null,
       audience:audience.id
     })});
     couponForm.reset();
+    ['coupon-code-error','coupon-discount-error','coupon-budget-error'].forEach(id => {
+      const el = get(id);
+      if (el) el.textContent = '';
+    });
+    couponForm.querySelectorAll('[aria-invalid]').forEach(el => el.removeAttribute('aria-invalid'));
     selectedCustomers.clear();
     showSelectedCustomers();
     get('customer-results').replaceChildren();

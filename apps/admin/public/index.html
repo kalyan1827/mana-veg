@@ -31,25 +31,99 @@
     </section>
   </div>
 </section>
-<section id="catalog" class="panel" hidden><h2>Vegetable catalog</h2><form id="publish"><div class="product-basics"><label class="upload-tile"><input name="photo" type="file" accept="image/jpeg,image/png,image/webp"><img id="upload-preview" alt="" hidden><span id="upload-caption">Upload product photo</span></label><div class="product-identity"><label>Name<input name="name" required maxlength="100"></label><div class="category-picker"><span id="category-label">Category</span><details id="category-picker"><summary id="category-current" aria-labelledby="category-label category-current">Vegetables</summary><div id="categories"></div></details><input type="hidden" name="category"></div></div></div><div class="category-picker"><span id="pricing-label">Pricing method</span><details id="pricing-picker"><summary id="pricing-current" aria-labelledby="pricing-label pricing-current">By kilogram</summary><div class="picker-options"><button type="button" data-pricing="weight">By kilogram</button><button type="button" data-pricing="fixed">Fixed pack</button></div></details><input type="hidden" name="pricing" value="weight"></div><label id="fixed-unit" hidden>Pack size<input name="unit" placeholder="6 eggs" maxlength="40"></label><label id="price-label"><span id="price-caption">Price per kg (₹)</span><input name="price" type="text" inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?|[.][0-9]{1,2}" required></label><p id="pack-prices" aria-live="polite"></p><label id="quarter-stock">250 g packs in stock<input name="stock250" type="text" inputmode="numeric" pattern="[0-9]{1,6}" value="0" required></label><label id="half-stock">500 g packs in stock<input name="stock500" type="text" inputmode="numeric" pattern="[0-9]{1,6}" value="0" required></label><label><span id="stock-label">1 kg packs in stock</span><input name="stock" type="text" inputmode="numeric" pattern="[0-9]{1,6}" required></label><fieldset><legend>Product tags</legend>
-<label class="toggle-row"><span>Regular</span><input type="checkbox" role="switch" name="tags" value="Regular"><span class="toggle-track" aria-hidden="true"></span><span class="toggle-state" aria-hidden="true"></span></label>
-<label class="toggle-row"><span>Today’s special</span><input type="checkbox" role="switch" name="tags" value="Today's special"><span class="toggle-track" aria-hidden="true"></span><span class="toggle-state" aria-hidden="true"></span></label>
-<label class="toggle-row"><span>Leafy vegetables</span><input type="checkbox" role="switch" name="tags" value="Leafy vegetables"><span class="toggle-track" aria-hidden="true"></span><span class="toggle-state" aria-hidden="true"></span></label>
-<label class="toggle-row"><span>Seasonal</span><input type="checkbox" role="switch" name="tags" value="Seasonal"><span class="toggle-track" aria-hidden="true"></span><span class="toggle-state" aria-hidden="true"></span></label>
-<label class="toggle-row"><span>Fruit</span><input type="checkbox" role="switch" name="tags" value="Fruit"><span class="toggle-track" aria-hidden="true"></span><span class="toggle-state" aria-hidden="true"></span></label>
-</fieldset>
-<label class="toggle-row"><span>Enable offer</span><input type="checkbox" role="switch" name="offer"><span class="toggle-track" aria-hidden="true"></span><span class="toggle-state" aria-hidden="true"></span></label>
-<label id="discount-field" hidden><span id="discount-caption">Discount off each kg (₹)</span><input name="discount" type="text" inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?|[.][0-9]{1,2}" disabled></label>
-<button id="publish-action">Publish vegetable</button> <button type="button" id="cancel-edit" hidden>Cancel edit</button></form><h3>Published vegetables</h3><p id="catalog-mode" hidden>Demo catalog · sample prices and stock</p><div class="grid" id="products"></div></section>
+<section id="catalog" class="panel" hidden>
+  <h2>Vegetable catalog</h2>
+  <form id="publish" novalidate>
+    <div class="product-basics">
+      <div class="product-photo-field">
+        <label class="upload-tile" id="upload-tile-label">
+          <input name="photo" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="publish-photo-error">
+          <img id="upload-preview" alt="" hidden>
+          <span id="upload-caption">Upload product photo</span>
+          <small class="upload-hint">JPG, PNG, WebP up to 2 MB</small>
+        </label>
+        <p id="publish-photo-error" class="field-error" role="status"></p>
+      </div>
+      <div class="product-identity">
+        <label>Name
+          <input name="name" required maxlength="100" placeholder="e.g. Tomato / Country Tomato" aria-describedby="publish-name-error">
+        </label>
+        <p id="publish-name-error" class="field-error" role="status"></p>
+        <div class="category-picker">
+          <span id="category-label">Category</span>
+          <details id="category-picker">
+            <summary id="category-current" aria-labelledby="category-label category-current">Vegetables</summary>
+            <div id="categories"></div>
+          </details>
+          <input type="hidden" name="category" aria-describedby="publish-category-error">
+        </div>
+        <p id="publish-category-error" class="field-error" role="status"></p>
+      </div>
+    </div>
+    <div class="category-picker">
+      <span id="pricing-label">Pricing method</span>
+      <details id="pricing-picker">
+        <summary id="pricing-current" aria-labelledby="pricing-label pricing-current">By kilogram</summary>
+        <div class="picker-options">
+          <button type="button" data-pricing="weight">By kilogram</button>
+          <button type="button" data-pricing="fixed">Fixed pack</button>
+        </div>
+      </details>
+      <input type="hidden" name="pricing" value="weight">
+    </div>
+    <label id="fixed-unit" hidden>Pack size
+      <input name="unit" placeholder="e.g. 6 eggs, 1 bundle" maxlength="40" aria-describedby="publish-unit-error">
+    </label>
+    <p id="publish-unit-error" class="field-error" role="status"></p>
+    <label id="price-label">
+      <span id="price-caption">Price per kg (₹)</span>
+      <input name="price" type="text" inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?|[.][0-9]{1,2}" required aria-describedby="publish-price-error">
+    </label>
+    <p id="publish-price-error" class="field-error" role="status"></p>
+    <p id="pack-prices" aria-live="polite"></p>
+    <label id="quarter-stock">250 g packs in stock
+      <input name="stock250" type="text" inputmode="numeric" pattern="[0-9]{1,6}" value="0" required aria-describedby="publish-stock250-error">
+    </label>
+    <p id="publish-stock250-error" class="field-error" role="status"></p>
+    <label id="half-stock">500 g packs in stock
+      <input name="stock500" type="text" inputmode="numeric" pattern="[0-9]{1,6}" value="0" required aria-describedby="publish-stock500-error">
+    </label>
+    <p id="publish-stock500-error" class="field-error" role="status"></p>
+    <label>
+      <span id="stock-label">1 kg packs in stock</span>
+      <input name="stock" type="text" inputmode="numeric" pattern="[0-9]{1,6}" required aria-describedby="publish-stock-error">
+    </label>
+    <p id="publish-stock-error" class="field-error" role="status"></p>
+    <fieldset><legend>Product tags</legend>
+      <label class="toggle-row"><span>Regular</span><input type="checkbox" role="switch" name="tags" value="Regular"><span class="toggle-track" aria-hidden="true"></span><span class="toggle-state" aria-hidden="true"></span></label>
+      <label class="toggle-row"><span>Today’s special</span><input type="checkbox" role="switch" name="tags" value="Today's special"><span class="toggle-track" aria-hidden="true"></span><span class="toggle-state" aria-hidden="true"></span></label>
+      <label class="toggle-row"><span>Leafy vegetables</span><input type="checkbox" role="switch" name="tags" value="Leafy vegetables"><span class="toggle-track" aria-hidden="true"></span><span class="toggle-state" aria-hidden="true"></span></label>
+      <label class="toggle-row"><span>Seasonal</span><input type="checkbox" role="switch" name="tags" value="Seasonal"><span class="toggle-track" aria-hidden="true"></span><span class="toggle-state" aria-hidden="true"></span></label>
+      <label class="toggle-row"><span>Fruit</span><input type="checkbox" role="switch" name="tags" value="Fruit"><span class="toggle-track" aria-hidden="true"></span><span class="toggle-state" aria-hidden="true"></span></label>
+    </fieldset>
+    <label class="toggle-row"><span>Enable offer</span><input type="checkbox" role="switch" name="offer"><span class="toggle-track" aria-hidden="true"></span><span class="toggle-state" aria-hidden="true"></span></label>
+    <label id="discount-field" hidden>
+      <span id="discount-caption">Discount off each kg (₹)</span>
+      <input name="discount" type="text" inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?|[.][0-9]{1,2}" disabled aria-describedby="publish-discount-error">
+    </label>
+    <p id="publish-discount-error" class="field-error" role="status"></p>
+    <p id="publish-general-error" class="field-error" role="status"></p>
+    <button id="publish-action">Publish vegetable</button> <button type="button" id="cancel-edit" hidden>Cancel edit</button>
+  </form>
+  <h3>Published vegetables</h3>
+  <p id="catalog-mode" hidden>Demo catalog · sample prices and stock</p>
+  <div class="grid" id="products"></div>
+</section>
 <section id="bookings" class="panel" hidden><h2>Bookings</h2><p id="booking-sync" role="status"></p><section><h3>Pending</h3><div id="pending-orders"></div></section><section><h3>Accepted</h3><div id="accepted-orders"></div></section><section><h3>Delivered</h3><div id="delivered-orders"></div></section><section><h3>Other bookings</h3><div id="orders"></div></section></section>
 <section id="offers" hidden>
   <h2>Offers</h2>
   <section class="panel offer-card">
     <h3>Free delivery</h3>
-    <form id="delivery-offer-form">
+    <form id="delivery-offer-form" novalidate>
     <label>Free delivery for subtotals above (₹)
-      <input name="threshold" required inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?" maxlength="12">
+      <input name="threshold" required inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?" maxlength="12" aria-describedby="delivery-offer-error">
     </label>
+    <p id="delivery-offer-error" class="field-error" role="status"></p>
     <p>Uses the item subtotal after discounts, before delivery.</p>
     <button id="save-delivery-offer" disabled>Publish delivery offer</button>
     <p id="delivery-offer-status" role="status"></p>
@@ -57,10 +131,13 @@
   </section>
   <section class="panel offer-card">
   <h3>Coupons</h3>
-  <form id="coupon-form">
-    <label>Coupon code<input name="code" required pattern="[a-zA-Z0-9\-]{3,32}" maxlength="32"></label>
-    <label>Discount per order (₹)<input name="discount" required inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?"></label>
-    <label>Total budget (₹)<input name="budget" required inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?"></label>
+  <form id="coupon-form" novalidate>
+    <label>Coupon code<input name="code" required pattern="[a-zA-Z0-9\-]{3,32}" maxlength="32" aria-describedby="coupon-code-error"></label>
+    <p id="coupon-code-error" class="field-error" role="status"></p>
+    <label>Discount per order (₹)<input name="discount" required inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?" aria-describedby="coupon-discount-error"></label>
+    <p id="coupon-discount-error" class="field-error" role="status"></p>
+    <label>Total budget (₹)<input name="budget" required inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?" aria-describedby="coupon-budget-error"></label>
+    <p id="coupon-budget-error" class="field-error" role="status"></p>
     <fieldset id="coupon-audience">
       <legend>Who can use this coupon?</legend><div id="coupon-audience-options"></div></fieldset>
     <div id="coupon-targets" hidden>
