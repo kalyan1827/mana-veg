@@ -1,13 +1,13 @@
 :root {
   --white: #fff;
-  --ink: #35271e;
-  --walnut: #5a3e2b;
-  --cream: #f7f4eb;
-  --border: #e1d8ca;
-  --cream-border: #d8cdbb;
-  --field-border: #9b8774;
-  --accent: #c7b294;
-  --shadow: #3d2c2014;
+  --ink: #142718;
+  --walnut: #1b7a37;
+  --cream: #eef7f0;
+  --border: #cfe0d4;
+  --cream-border: #c4dccb;
+  --field-border: #7ca887;
+  --accent: #2e7d32;
+  --shadow: rgba(20, 41, 24, 0.08);
   font-family: system-ui;
   color: var(--ink);
   background: var(--white)
@@ -672,7 +672,7 @@ nav a[aria-current=page] {
 }
 
 .catalog-original-price {
-  color: #695e55;
+  color: #4d6655;
 }
 
 button:hover:enabled {
@@ -914,7 +914,7 @@ p.field-error {
 
 .brand small {
   font: 600 .72rem system-ui;
-  color: #6c5b4d;
+  color: #4d6655;
   letter-spacing: .02em;
   margin-top: .12rem
 }
@@ -936,7 +936,7 @@ p.field-error {
 .dashboard-subtitle {
   margin: .2rem 0 0;
   font-size: .9rem;
-  color: #6c5b4d
+  color: #4d6655
 }
 
 .sync-pill {
@@ -1003,7 +1003,7 @@ p.field-error {
 
 .dash-shortcut span {
   font-size: .76rem;
-  color: #6c5b4d
+  color: #4d6655
 }
 
 .dash-shortcut-shop {
@@ -1082,7 +1082,7 @@ p.field-error {
 
 .stock-summary span {
   font-size: .78rem;
-  color: #6c5b4d;
+  color: #4d6655;
   font-weight: 600
 }
 
@@ -1114,13 +1114,13 @@ p.field-error {
 }
 
 .muted {
-  color: #6c5b4d;
+  color: #4d6655;
   font-size: .9rem
 }
 
 /* === Mobile-App Shell & All-Tabs UI Alignment (Admin) === */
 html {
-  background: #f3f0e8;
+  background: #eef4f0;
   overflow-x: clip
 }
 
@@ -1129,7 +1129,7 @@ body {
   min-height: 100svh;
   margin: 0 auto;
   background: var(--white);
-  box-shadow: 0 0 28px #2b211818;
+  box-shadow: 0 0 28px rgba(20, 41, 24, 0.08);
   overflow-x: clip;
   padding-bottom: calc(4.9rem + env(safe-area-inset-bottom));
 }
@@ -1166,7 +1166,7 @@ header {
 
 .brand small {
   font-size: .7rem;
-  color: #6c5b4d
+  color: #4d6655
 }
 
 /* Always-fixed bottom 5-tab mobile app bar */
@@ -1187,7 +1187,7 @@ header nav {
   border: 0;
   border-top: 1px solid var(--border);
   border-radius: 0;
-  box-shadow: 0 -3px 14px #2b211814;
+  box-shadow: 0 -3px 14px rgba(20, 41, 24, 0.06);
 }
 
 header nav a {
@@ -1202,7 +1202,7 @@ header nav a {
   font-size: .68rem;
   font-weight: 600;
   line-height: 1.1;
-  color: #5c4b3d;
+  color: #3b5443;
   text-decoration: none;
   white-space: nowrap;
   text-align: center;

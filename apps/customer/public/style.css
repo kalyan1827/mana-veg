@@ -1,13 +1,13 @@
 :root {
   --white: #fff;
-  --ink: #35271e;
-  --walnut: #5a3e2b;
-  --accent: #c7b294;
-  --cream: #f7f4eb;
-  --surface: #fbf8f2;
-  --border: #e1d8ca;
-  --field-border: #9b8774;
-  --shadow: #3d2c2014;
+  --ink: #142718;
+  --walnut: #1b7a37;
+  --accent: #2e7d32;
+  --cream: #eef7f0;
+  --surface: #f6fbf7;
+  --border: #cfe0d4;
+  --field-border: #7ca887;
+  --shadow: rgba(20, 41, 24, 0.08);
   font-family: system-ui;
   color: var(--ink);
   background: var(--white)
@@ -716,7 +716,7 @@ button:enabled:hover,
 }
 
 .pack-option s {
-  color: #736456
+  color: #4d6655
 }
 
 .product-total {
@@ -807,7 +807,7 @@ button:enabled:hover,
 }
 
 :root {
-  --cart-cream-border: #d8cdbb
+  --cart-cream-border: #c4dccb
 }
 
 .cart-bar {
@@ -827,7 +827,7 @@ button:enabled:hover,
   color: var(--ink);
   border: 1px solid var(--cart-cream-border);
   text-decoration: none;
-  box-shadow: 0 4px 16px #3d2c2040
+  box-shadow: 0 4px 16px rgba(27, 122, 55, 0.25)
 }
 
 #cart-bar strong {
@@ -1002,7 +1002,7 @@ body.has-cart-bar {
 .produce-card>.add-to-cart:disabled {
   background: var(--surface);
   border-color: var(--border);
-  color: #736456;
+  color: #4d6655;
   opacity: 1;
 }
 
@@ -1135,7 +1135,7 @@ body.has-cart-bar {
 }
 
 .cart-item-price s {
-  color: #736456;
+  color: #4d6655;
 }
 
 .cart-breakdown {
@@ -1385,7 +1385,7 @@ body.has-cart-bar.has-delivery-progress {
 
 .profile-tile span {
   font-size: .74rem;
-  color: #6c5b4d
+  color: #4d6655
 }
 
 .profile-tile-wa {
@@ -1425,7 +1425,7 @@ body.has-cart-bar.has-delivery-progress {
 .profile-hint {
   margin: 0 0 .9rem;
   font-size: .84rem;
-  color: #6c5b4d
+  color: #4d6655
 }
 
 .profile-grid {
@@ -1499,7 +1499,7 @@ body.has-cart-bar.has-delivery-progress {
 }
 
 .profile-info-list dt {
-  color: #6c5b4d;
+  color: #4d6655;
   font-weight: 600
 }
 
@@ -1544,7 +1544,7 @@ body.has-cart-bar.has-delivery-progress {
 
 .brand small {
   font: 600 .72rem system-ui;
-  color: #6c5b4d;
+  color: #4d6655;
   letter-spacing: .02em;
   margin-top: .12rem
 }
@@ -1570,7 +1570,7 @@ body.has-cart-bar.has-delivery-progress {
 
 .delivery-hero p:last-child {
   margin: 0;
-  color: #5f4d3f;
+  color: #4d6655;
   font-size: .95rem
 }
 
@@ -1615,7 +1615,7 @@ body.has-cart-bar.has-delivery-progress {
 .delivery-info-grid p {
   margin: 0;
   font-size: .84rem;
-  color: #5f4d3f;
+  color: #4d6655;
   line-height: 1.45
 }
 
@@ -1723,7 +1723,7 @@ body.has-cart-bar.has-delivery-progress {
 .bill-note {
   margin: .65rem 0 0;
   font-size: .83rem;
-  color: #5f4d3f;
+  color: #4d6655;
   font-weight: 600
 }
 
@@ -1740,7 +1740,7 @@ body.has-cart-bar.has-delivery-progress {
 .checkout-hint {
   margin: 0 0 1rem;
   font-size: .86rem;
-  color: #6c5b4d
+  color: #4d6655
 }
 
 .checkout-section {
@@ -1815,7 +1815,7 @@ body.has-cart-bar.has-delivery-progress {
 
 .payment-banner span {
   font-size: .82rem;
-  color: #5f4d3f
+  color: #4d6655
 }
 
 .cta-primary {
@@ -1878,7 +1878,7 @@ body.has-cart-bar.has-delivery-progress {
 
 /* === Mobile-App Shell & All-Tabs UI Alignment === */
 html {
-  background: #f3f0e8;
+  background: #eef4f0;
   overflow-x: clip
 }
 
@@ -1887,7 +1887,7 @@ body {
   min-height: 100svh;
   margin: 0 auto;
   background: var(--white);
-  box-shadow: 0 0 28px #2b211818;
+  box-shadow: 0 0 28px rgba(20, 41, 24, 0.08);
   overflow-x: clip;
   padding-bottom: calc(4.9rem + env(safe-area-inset-bottom));
 }
@@ -1924,7 +1924,7 @@ header {
 
 .brand small {
   font-size: .7rem;
-  color: #6c5b4d
+  color: #4d6655
 }
 
 /* Always-fixed bottom 5-tab mobile app bar */
@@ -1945,7 +1945,7 @@ header nav {
   border: 0;
   border-top: 1px solid var(--border);
   border-radius: 0;
-  box-shadow: 0 -3px 14px #2b211814;
+  box-shadow: 0 -3px 14px rgba(20, 41, 24, 0.06);
 }
 
 header nav a {
@@ -1961,7 +1961,7 @@ header nav a {
   font-size: .68rem;
   font-weight: 600;
   line-height: 1.1;
-  color: #5c4b3d;
+  color: #3b5443;
   text-decoration: none;
   white-space: nowrap;
   text-align: center;
@@ -2094,7 +2094,7 @@ main h2 {
 .produce-card .pack-picker legend {
   font-size: .68rem;
   margin-bottom: .18rem;
-  color: #6c5b4d
+  color: #4d6655
 }
 
 .produce-card .pack-option {
@@ -2253,7 +2253,7 @@ body.has-cart-bar.has-delivery-progress {
 .order-card-meta {
   margin: 0 0 .35rem;
   font-size: .8rem;
-  color: #6c5b4d;
+  color: #4d6655;
   font-weight: 600
 }
 
@@ -2274,7 +2274,7 @@ body.has-cart-bar.has-delivery-progress {
 }
 
 .order-card-foot small {
-  color: #6c5b4d;
+  color: #4d6655;
   font-weight: 600
 }
 
@@ -2450,7 +2450,7 @@ button:active:enabled {
 
 .profile-row-body span {
   font-size: .78rem;
-  color: #6c5b4d;
+  color: #4d6655;
   line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
@@ -2460,7 +2460,7 @@ button:active:enabled {
 .profile-row-chevron {
   font-size: 1.35rem;
   line-height: 1;
-  color: #9b8774;
+  color: #7ca887;
   padding-left: .25rem
 }
 
