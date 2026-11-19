@@ -532,10 +532,11 @@ small {
 }
 
 .pack-picker .pack-option {
-  flex: 1 1 4rem;
+  flex: 1 1 0;
   min-width: 0;
   width: auto;
-  padding: .4rem .2rem;
+  min-height: 44px;
+  padding: .35rem .15rem;
   border: 1.5px solid #e2e8f0;
   background: #ffffff;
   color: #475569;
@@ -543,6 +544,28 @@ small {
   border-radius: 8px;
   transition: all .15s ease;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.pack-picker .pack-option strong {
+  display: block;
+  white-space: nowrap;
+  font-size: .82rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.pack-picker .pack-option span {
+  display: block;
+  white-space: nowrap;
+  font-size: .74rem;
+  font-weight: 600;
+  line-height: 1.15;
 }
 
 .pack-picker .pack-option:hover:not(:disabled) {
@@ -834,10 +857,33 @@ button:enabled:hover,
 
   .produce-card .pack-option {
     flex: 1 1 0;
-    padding: .25rem .08rem;
-    font-size: .67rem;
-    line-height: 1.25;
-    overflow-wrap: anywhere
+    min-height: 42px;
+    padding: .3rem .1rem;
+    font-size: .7rem;
+    line-height: 1.2;
+    overflow-wrap: normal;
+    white-space: nowrap;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .produce-card .pack-option strong {
+    display: block;
+    white-space: nowrap;
+    font-size: .78rem;
+    font-weight: 800;
+    line-height: 1.15;
+  }
+
+  .produce-card .pack-option span {
+    display: block;
+    white-space: nowrap;
+    font-size: .72rem;
+    font-weight: 600;
+    line-height: 1.15;
   }
 
   .produce-card .pack-option s {
@@ -2436,14 +2482,39 @@ main h2 {
 
 .produce-card .pack-option {
   flex: 1 1 0;
-  min-height: 38px;
-  padding: .24rem .1rem;
-  font-size: .66rem;
-  line-height: 1.2
+  min-height: 42px;
+  padding: .3rem .1rem;
+  font-size: .7rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.produce-card .pack-option strong {
+  display: block;
+  white-space: nowrap;
+  font-size: .78rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.produce-card .pack-option span {
+  display: block;
+  white-space: nowrap;
+  font-size: .72rem;
+  font-weight: 600;
+  line-height: 1.15;
 }
 
 .produce-card .pack-option s {
-  font-size: .6rem
+  display: block;
+  white-space: nowrap;
+  font-size: .62rem;
+  line-height: 1.1;
 }
 
 .produce-card .product-total {

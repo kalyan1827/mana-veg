@@ -1,6 +1,6 @@
 const get=id=>document.getElementById(id);
 const notice=message=>{get('notice').textContent=message;};
-const money=value=>new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR'}).format(value/100);
+const money=value=>new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',minimumFractionDigits:0,maximumFractionDigits:2}).format(value/100);
 const checkout=get('checkout');
 const profileForm=get('profile-form');
 const cart=new Map();
@@ -327,7 +327,8 @@ function productCard(variants) {
       updateTotal();
     });
     choice.className='pack-option';
-    choice.append(node('strong',option.unit),node('span',money(option.price)));
+    const displayUnit=String(option.unit || '').replace(/(\d+)\s+(g|kg)\b/gi,'$1$2');
+    choice.append(node('strong',displayUnit),node('span',money(option.price)));
     if(option.original_price>option.price) choice.append(node('s',money(option.original_price)));
     choice.disabled=!option.stock;
     if (!option.stock) choice.append(node('small','Sold out'));
