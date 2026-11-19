@@ -96,21 +96,46 @@
 </section>
 <section id="admin-login" class="panel account-page" aria-labelledby="admin-login-title" hidden>
   <h1 id="admin-login-title">Admin sign in</h1>
-  <p>We’ll email a six-digit code to your admin email address.</p>
-  <form id="admin-send" novalidate>
-    <label>Email address <span class="field-error" aria-hidden="true">*</span>
-      <input name="email" type="email" autocomplete="email" autocapitalize="none" required aria-describedby="admin-email-error">
+  <p id="admin-login-desc">Sign in with your admin email and password.</p>
+  <form id="admin-pwd-form" novalidate>
+    <label>Admin email <span class="field-error" aria-hidden="true">*</span>
+      <input name="email" type="email" autocomplete="email" autocapitalize="none" required aria-describedby="admin-pwd-email-error">
     </label>
-    <p id="admin-email-error" class="field-error" role="status"></p>
-    <button>Send sign-in code</button>
-  </form>
-  <p id="admin-code-status" role="status"></p>
-  <form id="admin-verify" novalidate hidden>
-    <label>Six-digit code <span class="field-error" aria-hidden="true">*</span>
-      <input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required aria-describedby="admin-code-error">
+    <p id="admin-pwd-email-error" class="field-error" role="status"></p>
+    <label>Password <span class="field-error" aria-hidden="true">*</span>
+      <input name="password" type="password" autocomplete="current-password" required minlength="8" placeholder="Enter your password" aria-describedby="admin-pwd-error">
     </label>
-    <p id="admin-code-error" class="field-error" role="status"></p>
-    <button>Verify and continue</button>
+    <p id="admin-pwd-error" class="field-error" role="status"></p>
+    <button id="admin-pwd-btn">Sign in with password</button>
+    <p id="admin-pwd-status" class="field-status" role="status"></p>
+    <div class="auth-toggle-row">
+      <button type="button" id="admin-switch-otp" class="auth-text-link">First-time setup or forgot password? Verify with email code</button>
+    </div>
   </form>
+  <div id="admin-otp-wrap" hidden>
+    <form id="admin-send" novalidate>
+      <p class="auth-section-hint">Enter your admin email. We’ll email you a six-digit verification code to set your password.</p>
+      <label>Admin email <span class="field-error" aria-hidden="true">*</span>
+        <input name="email" type="email" autocomplete="email" autocapitalize="none" required aria-describedby="admin-email-error">
+      </label>
+      <p id="admin-email-error" class="field-error" role="status"></p>
+      <button id="admin-send-code">Send verification code</button>
+    </form>
+    <p id="admin-code-status" role="status"></p>
+    <form id="admin-verify" novalidate hidden>
+      <label>Six-digit code <span class="field-error" aria-hidden="true">*</span>
+        <input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required aria-describedby="admin-code-error">
+      </label>
+      <p id="admin-code-error" class="field-error" role="status"></p>
+      <label>Set admin password <span class="field-error" aria-hidden="true">*</span>
+        <input name="new_password" type="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters" aria-describedby="admin-new-pwd-error">
+      </label>
+      <p id="admin-new-pwd-error" class="field-error" role="status"></p>
+      <button id="admin-verify-btn">Verify and set password</button>
+    </form>
+    <div class="auth-toggle-row">
+      <button type="button" id="admin-switch-pwd" class="auth-text-link">← Back to password sign in</button>
+    </div>
+  </div>
 </section>
 <output id="notice" aria-live="polite"></output></main><script type="module" src="/app.mjs"></script></body></html>

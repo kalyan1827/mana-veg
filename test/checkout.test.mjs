@@ -113,6 +113,53 @@ test('admin email codes issue staff sessions only for provisioned admin accounts
   assert.equal((await call('admin/catalog',null,cookie)).status,401);
 });
 
+test('admin sets password once via email verification, then logs in directly with email and password', async () => {
+  const DB=localDatabase();
+  const origin='https://admin.example.test';
+  let code;
+  const env={DB,OTP_SECRET:'test-secret',BREVO_API_KEY:'test',BREVO_SENDER:'test@example.test',
+    async sendLocalEmail(_url,options) {
+      code=JSON.parse(options.body).textContent.match(/\b\d{6}\b/)[0];
+      return new Response(null,{status:201});
+    }
+  };
+  const call=(path,data,cookie)=>backend.fetch(new Request(origin+'/api/'+path,{
+    method:data ? 'POST' : 'GET',
+    headers:{Origin:origin,Cookie:cookie?.split(';')[0] ?? ''},
+    body:data && JSON.stringify(data)
+  }),env);
+  const email='staff@example.test';
+
+  // 1. Direct password login before setting password fails with needsSetup: true
+  const initialLogin = await call('auth/admin/login',{email,password:'MyAdminPass123!'});
+  assert.equal(initialLogin.status,400);
+  const initialJson = await initialLogin.json();
+  assert.equal(initialJson.needsSetup,true);
+
+  // 2. Initial setup: verify email with OTP and set new password
+  assert.equal((await call('auth/otp/request',{email,mode:'admin'})).status,200);
+  assert.ok(code);
+  const setupRes = await call('auth/otp/verify',{email,code,mode:'admin',password:'MyAdminPass123!'});
+  assert.equal(setupRes.status,200);
+  const setupCookie = setupRes.headers.get('Set-Cookie');
+  assert.ok(setupCookie);
+
+  // 3. Daily login: Admin logs in with Email + Password directly (no email OTP needed!)
+  const pwdLogin = await call('auth/admin/login',{email,password:'MyAdminPass123!'});
+  assert.equal(pwdLogin.status,200);
+  const adminCookie = pwdLogin.headers.get('Set-Cookie');
+  assert.ok(adminCookie);
+
+  // 4. Verify admin access works with the session from password login
+  assert.equal((await call('admin/catalog',null,adminCookie)).status,200);
+
+  // 5. Wrong password fails
+  assert.equal((await call('auth/admin/login',{email,password:'WrongPassword!'})).status,401);
+
+  // 6. Non-admin email fails
+  assert.equal((await call('auth/admin/login',{email:'shopper@example.test',password:'MyAdminPass123!'})).status,401);
+});
+
 test('email signup issues a persistent customer session and logout revokes it', async () => {
   const DB = localDatabase();
   const email = 'new@example.test';

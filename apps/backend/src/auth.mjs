@@ -1,6 +1,35 @@
 import { issueSession } from './sessions.mjs';
 export const validUsername = value => typeof value==='string' && /^[a-zA-Z0-9_]{3,24}$/.test(value);
 
+export async function hashPassword(password, saltHex = null) {
+  const encoder = new TextEncoder();
+  const salt = saltHex
+    ? new Uint8Array(saltHex.match(/.{1,2}/g).map(b => parseInt(b, 16)))
+    : crypto.getRandomValues(new Uint8Array(16));
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(password),
+    'PBKDF2',
+    false,
+    ['deriveBits']
+  );
+  const derivedBits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+    keyMaterial,
+    256
+  );
+  const hashHex = Array.from(new Uint8Array(derivedBits), b => b.toString(16).padStart(2, '0')).join('');
+  const saltOut = Array.from(salt, b => b.toString(16).padStart(2, '0')).join('');
+  return `${saltOut}:${hashHex}`;
+}
+
+export async function verifyPassword(password, storedHash) {
+  if (!storedHash || !storedHash.includes(':')) return false;
+  const [saltOut, expectedHash] = storedHash.split(':');
+  const computed = await hashPassword(password, saltOut);
+  return computed === storedHash;
+}
+
 async function digest(secret, email, code) {
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey('raw', encoder.encode(secret), {name:'HMAC',hash:'SHA-256'}, false, ['sign']);
@@ -122,6 +151,54 @@ export async function emailAuth(request, env, path, reply) {
     const created = await db.prepare("INSERT INTO users(email,role,username) VALUES (?,'customer',?) ON CONFLICT DO NOTHING RETURNING email").bind(email,username).first();
     if (!created) return reply({error:'Email or username is already in use'},409);
   }
+  if (mode === 'admin' && input?.password !== undefined) {
+    if (typeof input.password !== 'string' || input.password.length < 8) {
+      return reply({error:'Password must be at least 8 characters long'},400);
+    }
+    const passwordHash = await hashPassword(input.password);
+    await db.prepare("UPDATE users SET password_hash=? WHERE email=? AND role='admin'").bind(passwordHash,email).run();
+  }
   const cookie = await issueSession(db,email,role);
   return cookie ? reply({ok:true},200,{'Set-Cookie':cookie}) : reply({error:'Invalid code'},401);
+}
+
+export async function adminPasswordAuth(request, env, reply) {
+  if (request.method !== 'POST') return reply({ error: 'Method not allowed' }, 405);
+  if (request.headers.get('Origin') !== new URL(request.url).origin) return reply({ error: 'Invalid origin' }, 403);
+
+  const input = await request.json().catch(() => null);
+  const email = typeof input?.email === 'string' ? input.email.trim().toLowerCase() : '';
+  const password = typeof input?.password === 'string' ? input.password : '';
+  if (!email || email.length > 254 || !password) {
+    return reply({ error: 'Enter your admin email and password' }, 400);
+  }
+
+  const db = env.DB;
+  const now = Date.now();
+  const hour = Math.floor(now / 3600000);
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const bucket = await digest(env.OTP_SECRET || 'admin-secret', ip, 'admin-pwd:' + hour);
+  const rate = await db.prepare(`INSERT INTO rate_limits VALUES (?,1,?) ON CONFLICT(bucket)
+    DO UPDATE SET hits=hits+1 WHERE hits<? RETURNING hits`)
+    .bind(bucket, (hour + 1) * 3600000, 20).first();
+  if (!rate) return reply({ error: 'Too many login attempts. Try again later' }, 429);
+
+  const user = await db.prepare('SELECT role, password_hash FROM users WHERE email=?').bind(email).first();
+  if (!user || user.role !== 'admin') {
+    return reply({ error: 'Invalid admin credentials' }, 401);
+  }
+  if (!user.password_hash) {
+    return reply({
+      error: 'No password set yet. Please verify your email first to set up your admin password.',
+      needsSetup: true
+    }, 400);
+  }
+
+  const valid = await verifyPassword(password, user.password_hash);
+  if (!valid) {
+    return reply({ error: 'Incorrect email or password' }, 401);
+  }
+
+  const cookie = await issueSession(db, email, 'admin');
+  return cookie ? reply({ ok: true }, 200, { 'Set-Cookie': cookie }) : reply({ error: 'Failed to issue session' }, 500);
 }

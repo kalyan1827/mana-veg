@@ -764,8 +764,47 @@ p.field-error {
 }
 
 #admin-code-status:empty,
-.field-error:empty {
+.field-error:empty,
+.field-status:empty {
   display: none;
+}
+
+.auth-toggle-row {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.auth-text-link {
+  background: transparent !important;
+  border: 0 !important;
+  color: var(--walnut) !important;
+  font-size: .84rem !important;
+  font-weight: 600 !important;
+  text-decoration: underline !important;
+  cursor: pointer !important;
+  padding: .35rem !important;
+  min-height: auto !important;
+  width: auto !important;
+  box-shadow: none !important;
+  display: inline-block !important;
+}
+
+.auth-text-link:hover {
+  color: #145e2a !important;
+}
+
+.auth-section-hint {
+  font-size: .88rem;
+  color: #4d6655;
+  margin: 0 0 .85rem;
+  line-height: 1.45;
+}
+
+.field-status {
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--walnut);
+  margin: .4rem 0 0;
 }
 
 #profile>.panel {

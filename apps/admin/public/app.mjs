@@ -559,6 +559,74 @@ function bindAdminAuth(formId,field,errorId,missing,invalid,submit) {
 function postAuth(path,data={}) {
   return api('auth/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
 }
+
+function switchToOtpSetup(prefillEmail = '') {
+  get('admin-pwd-form').hidden = true;
+  get('admin-otp-wrap').hidden = false;
+  get('admin-login-desc').textContent = 'Verify your admin email to set or reset your password.';
+  if (prefillEmail) get('admin-send').elements.email.value = prefillEmail;
+}
+
+function switchToPasswordLogin(prefillEmail = '') {
+  get('admin-otp-wrap').hidden = true;
+  get('admin-pwd-form').hidden = false;
+  get('admin-login-desc').textContent = 'Sign in with your admin email and password.';
+  if (prefillEmail) get('admin-pwd-form').elements.email.value = prefillEmail;
+}
+
+get('admin-switch-otp').onclick = () => {
+  const email = get('admin-pwd-form').elements.email.value.trim();
+  switchToOtpSetup(email);
+};
+
+get('admin-switch-pwd').onclick = () => {
+  const email = get('admin-send').elements.email.value.trim();
+  switchToPasswordLogin(email);
+};
+
+const pwdForm = get('admin-pwd-form');
+pwdForm.onsubmit = async event => {
+  event.preventDefault();
+  get('admin-pwd-email-error').textContent = '';
+  get('admin-pwd-error').textContent = '';
+  get('admin-pwd-status').textContent = '';
+
+  const email = pwdForm.elements.email.value.trim();
+  const password = pwdForm.elements.password.value;
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    get('admin-pwd-email-error').textContent = 'Enter a valid admin email address.';
+    pwdForm.elements.email.focus();
+    return;
+  }
+  if (!password) {
+    get('admin-pwd-error').textContent = 'Enter your admin password.';
+    pwdForm.elements.password.focus();
+    return;
+  }
+
+  const button = get('admin-pwd-btn');
+  button.disabled = true;
+  get('admin-pwd-status').textContent = 'Signing in…';
+  try {
+    await postAuth('admin/login', { email, password });
+    pwdForm.reset();
+    get('admin-pwd-status').textContent = '';
+    await loadAdminAccount();
+    if (location.hash === '#login') window.history.replaceState(null, '', '#home');
+  } catch (error) {
+    get('admin-pwd-status').textContent = '';
+    if (error.needsSetup) {
+      switchToOtpSetup(email);
+      get('admin-code-status').textContent = error.message;
+    } else {
+      get('admin-pwd-error').textContent = error.message;
+    }
+  } finally {
+    button.disabled = false;
+  }
+};
+
 let codeEmail;
 bindAdminAuth('admin-send','email','admin-email-error','Enter your email address.','Enter a valid email address.',async email=>{
   const verify=get('admin-verify');
@@ -566,22 +634,52 @@ bindAdminAuth('admin-send','email','admin-email-error','Enter your email address
   verify.reset();
   verify.elements.code.removeAttribute('aria-invalid');
   get('admin-code-error').textContent='';
-  get('admin-code-status').textContent='';
+  get('admin-new-pwd-error').textContent='';
+  get('admin-code-status').textContent='Sending verification code…';
   await postAuth('otp/request',{email,mode:'admin'});
   codeEmail=email;
   verify.hidden=false;
-  get('admin-code-status').textContent='Code sent to '+email+'.';
+  get('admin-code-status').textContent='6-digit verification code sent to '+email+'.';
   verify.elements.code.focus();
 });
-bindAdminAuth('admin-verify','code','admin-code-error','Enter your six-digit code.','Enter exactly six digits.',async code=>{
-  await postAuth('otp/verify',{email:codeEmail,code,mode:'admin'});
-  await loadAdminAccount();
-  get('admin-send').reset();
-  get('admin-verify').reset();
-  get('admin-verify').hidden=true;
-  get('admin-code-status').textContent='';
-  if(location.hash==='#login') window.history.replaceState(null,'','#home');
-});
+
+const verifyForm = get('admin-verify');
+verifyForm.onsubmit = async event => {
+  event.preventDefault();
+  get('admin-code-error').textContent = '';
+  get('admin-new-pwd-error').textContent = '';
+
+  const code = verifyForm.elements.code.value.trim();
+  const newPassword = verifyForm.elements.new_password.value;
+
+  if (!/^\d{6}$/.test(code)) {
+    get('admin-code-error').textContent = 'Enter exactly six digits.';
+    verifyForm.elements.code.focus();
+    return;
+  }
+  if (!newPassword || newPassword.length < 8) {
+    get('admin-new-pwd-error').textContent = 'Password must be at least 8 characters long.';
+    verifyForm.elements.new_password.focus();
+    return;
+  }
+
+  const button = get('admin-verify-btn');
+  button.disabled = true;
+  try {
+    await postAuth('otp/verify', { email: codeEmail, code, mode: 'admin', password: newPassword });
+    get('admin-send').reset();
+    verifyForm.reset();
+    verifyForm.hidden = true;
+    get('admin-code-status').textContent = '';
+    switchToPasswordLogin(codeEmail);
+    await loadAdminAccount();
+    if (location.hash === '#login') window.history.replaceState(null, '', '#home');
+  } catch (error) {
+    get('admin-code-error').textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+};
 get('admin-logout').onclick=async event=>{
   const button=event.currentTarget;
   button.disabled=true;
