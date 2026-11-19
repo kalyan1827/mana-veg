@@ -136,7 +136,8 @@ function updateCartBar() {
   const items=[...cart.values()];
   const count=items.reduce((sum,item)=>sum+item.quantity,0);
   get('cart-bar-count').textContent=count+' '+(count===1 ? 'item' : 'items')+' · '+money(subtotal());
-  get('cart-bar').hidden=!count || !['#home','#categories'].includes(location.hash);
+  const onShopView = !['#cart','#orders','#profile','#welcome','#login','#signup'].includes(location.hash);
+  get('cart-bar').hidden=!count || !onShopView;
   get('cart-checkout-bar').hidden=!count || location.hash!=='#cart';
   get('cart-pay-total').textContent=count ? money(payable()) : '';
 
@@ -151,7 +152,14 @@ function updateCartBar() {
           img.className='cart-pill-thumb';
           img.alt=product.name;
           img.src=productPhotoUrl(product);
-          img.onerror=()=>{ img.style.display='none'; };
+          img.onerror=()=>{
+            if (!img.dataset.fallback) {
+              img.dataset.fallback = '1';
+              img.src = '/logo.jpg';
+            } else {
+              img.style.display = 'none';
+            }
+          };
           return img;
         })
       );
@@ -640,11 +648,12 @@ async function loadOrders(offset=0) {
     const adminWa=catalog?.adminWhatsApp || '919398750721';
     const cards=result.orders.map(order=>{
       const isJustPlaced = order.id === lastPlacedOrderId;
-      const card=node('article','','card order-card' + (isJustPlaced ? ' order-newly-placed' : ''));
+      const statusClass = ' order-status-' + (order.status || '').toLowerCase();
+      const card=node('article','','card order-card' + (isJustPlaced ? ' order-newly-placed' : '') + statusClass);
       const shortId=String(order.id).slice(0,8).toUpperCase();
-      const statusIcon = { Placed:'🟡', Confirmed:'🟢', Delivered:'✅', Rejected:'❌' }[order.status] ?? '📦';
+      const statusIcon = { Placed:'🟠', Confirmed:'🟢', Delivered:'✅', Rejected:'❌' }[order.status] ?? '📦';
       const statusText = {
-        Placed: 'Order Placed · Awaiting Confirmation',
+        Placed: 'Waiting for Admin Acceptance',
         Confirmed: 'Order Accepted · Delivery Tomorrow',
         Delivered: 'Order Delivered',
         Rejected: 'Order Rejected'
@@ -653,7 +662,7 @@ async function loadOrders(offset=0) {
       // Banner for newly placed order
       if (isJustPlaced) {
         const justPlacedBanner = node('div', '', 'order-newly-placed-banner');
-        justPlacedBanner.append(node('span', '🎉 Order placed successfully! Delivering tomorrow to your address.'));
+        justPlacedBanner.append(node('span', '🟠 Order placed! Waiting for admin acceptance. Delivery tomorrow.'));
         card.append(justPlacedBanner);
       }
 

@@ -72,8 +72,8 @@ function whatsappInvoiceUrl(order) {
 }
 function bookingCard(order) {
   const card = text('article','');
-  card.className = 'card';
-  const status = {Placed:'Pending',Confirmed:'Accepted'}[order.status] ?? order.status;
+  card.className = 'card' + (order.status === 'Placed' ? ' booking-card-pending' : '');
+  const status = {Placed:'Pending · Waiting Acceptance',Confirmed:'Accepted'}[order.status] ?? order.status;
   card.append(text('strong',status+' · '+money(order.total)),text('p',order.id),
     text('p',order.address+' · '+order.phone),text('p',order.slot_label),
     text('p',JSON.parse(order.items).map(item=>item.name+' × '+item.quantity).join(', ')));

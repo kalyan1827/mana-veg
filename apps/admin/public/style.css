@@ -1045,7 +1045,16 @@ textarea[aria-invalid=true] {
 }
 
 .stat-pending {
-  border-top: 4px solid #d5851f
+  border-top: 4px solid #ea580c;
+}
+
+.card.booking-card-pending {
+  border-left: 4px solid #ea580c;
+  background: #fffdfa;
+}
+
+.card.booking-card-pending strong:first-child {
+  color: #c2410c;
 }
 
 .stat-accepted {
