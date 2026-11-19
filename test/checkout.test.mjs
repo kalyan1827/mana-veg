@@ -158,6 +158,30 @@ test('admin sets password once via email verification, then logs in directly wit
 
   // 6. Non-admin email fails
   assert.equal((await call('auth/admin/login',{email:'shopper@example.test',password:'MyAdminPass123!'})).status,401);
+
+  // 7. Provisioned admin ranjithbellam91901@gmail.com can set password and log in
+  let ranjithCode;
+  const ranjithEnv = {
+    ...env,
+    async sendLocalEmail(_url, options) {
+      ranjithCode = JSON.parse(options.body).textContent.match(/\b\d{6}\b/)[0];
+      return new Response(null, { status: 201 });
+    }
+  };
+  const ranjithCall = (path, data, cookie) => backend.fetch(new Request(origin + '/api/' + path, {
+    method: data ? 'POST' : 'GET',
+    headers: { Origin: origin, Cookie: cookie?.split(';')[0] ?? '' },
+    body: data && JSON.stringify(data)
+  }), ranjithEnv);
+
+  assert.equal((await ranjithCall('auth/otp/request', { email: 'ranjithbellam91901@gmail.com', mode: 'admin' })).status, 200);
+  assert.ok(ranjithCode);
+  const ranjithSetup = await ranjithCall('auth/otp/verify', { email: 'ranjithbellam91901@gmail.com', code: ranjithCode, mode: 'admin', password: 'RanjithPass123!' });
+  assert.equal(ranjithSetup.status, 200);
+
+  const ranjithLogin = await ranjithCall('auth/admin/login', { email: 'ranjithbellam91901@gmail.com', password: 'RanjithPass123!' });
+  assert.equal(ranjithLogin.status, 200);
+  assert.equal((await ranjithCall('admin/catalog', null, ranjithLogin.headers.get('Set-Cookie'))).status, 200);
 });
 
 test('email signup issues a persistent customer session and logout revokes it', async () => {
