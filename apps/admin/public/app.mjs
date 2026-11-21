@@ -1355,26 +1355,72 @@ function postAuth(path,data={}) {
 function switchToOtpSetup(prefillEmail = '') {
   get('admin-pwd-form').hidden = true;
   get('admin-otp-wrap').hidden = false;
-  get('admin-login-desc').textContent = 'Verify your admin email to set or reset your password.';
+  get('admin-login-title').textContent = 'Admin Setup';
+  get('admin-login-desc').textContent = 'Verify your admin email to set your password.';
+  get('admin-otp-hint').textContent = 'Enter your admin email. We’ll email you a six-digit verification code to set your password.';
+  get('admin-send-code').textContent = 'Send verification code';
+  get('admin-verify-btn').textContent = 'Verify and set password';
+  if (prefillEmail) get('admin-send').elements.email.value = prefillEmail;
+}
+
+function switchToForgotPassword(prefillEmail = '') {
+  get('admin-pwd-form').hidden = true;
+  get('admin-otp-wrap').hidden = false;
+  get('admin-login-title').textContent = 'Reset Admin Password';
+  get('admin-login-desc').textContent = 'Enter your admin email to receive a code and reset your password.';
+  get('admin-otp-hint').textContent = 'Enter your admin email. We’ll email you a six-digit verification code to reset your password.';
+  get('admin-send-code').textContent = 'Send reset code';
+  get('admin-verify-btn').textContent = 'Reset password & Sign in';
   if (prefillEmail) get('admin-send').elements.email.value = prefillEmail;
 }
 
 function switchToPasswordLogin(prefillEmail = '') {
   get('admin-otp-wrap').hidden = true;
   get('admin-pwd-form').hidden = false;
+  get('admin-login-title').textContent = 'Admin sign in';
   get('admin-login-desc').textContent = 'Sign in with your admin email and password.';
   if (prefillEmail) get('admin-pwd-form').elements.email.value = prefillEmail;
 }
 
-get('admin-switch-otp').onclick = () => {
+get('admin-forgot-pwd')?.addEventListener('click', () => {
+  const email = get('admin-pwd-form').elements.email.value.trim();
+  switchToForgotPassword(email);
+});
+
+get('admin-switch-otp')?.addEventListener('click', () => {
   const email = get('admin-pwd-form').elements.email.value.trim();
   switchToOtpSetup(email);
-};
+});
 
-get('admin-switch-pwd').onclick = () => {
+get('admin-switch-pwd')?.addEventListener('click', () => {
   const email = get('admin-send').elements.email.value.trim();
   switchToPasswordLogin(email);
-};
+});
+
+function bindPasswordToggles() {
+  document.querySelectorAll('.btn-toggle-pwd').forEach(btn => {
+    btn.onclick = (e) => {
+      e.preventDefault();
+      const wrap = btn.closest('.password-input-wrap');
+      if (!wrap) return;
+      const input = wrap.querySelector('input');
+      if (!input) return;
+      const isPassword = input.type === 'password';
+      input.type = isPassword ? 'text' : 'password';
+
+      const eyeShow = btn.querySelector('.eye-show');
+      const eyeHide = btn.querySelector('.eye-hide');
+      if (eyeShow && eyeHide) {
+        eyeShow.hidden = isPassword;
+        eyeHide.hidden = !isPassword;
+      }
+      btn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+      btn.setAttribute('title', isPassword ? 'Hide password' : 'Show password');
+      input.focus();
+    };
+  });
+}
+bindPasswordToggles();
 
 const pwdForm = get('admin-pwd-form');
 pwdForm.onsubmit = async event => {
