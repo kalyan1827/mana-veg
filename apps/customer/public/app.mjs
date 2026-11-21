@@ -167,8 +167,8 @@ function updateCartBar() {
   document.body.classList.toggle('has-cart-bar',cartBarVisible || !deliveryOfferBanner.hidden);
 }
 get('cart-continue').onclick=()=>{
-  checkout.scrollIntoView({block:'start'});
-  checkout.elements.address.focus({preventScroll:true});
+  checkout.scrollIntoView({behavior:'smooth',block:'start'});
+  (get('addr-house') || checkout.elements.address)?.focus({preventScroll:true});
 };
 const staticProducePhotos=new Set([
   'aalu','beans','beetroot','bendakaya','black-mirchi','black-vankaya',
@@ -319,8 +319,9 @@ function productCard(variants) {
     media.append(offerBadge);
   }
   let variant = variants.find(option=>option.stock) ?? product;
-  const pack = node('fieldset','','pack-picker');
-  pack.append(node('legend','Pack size'));
+  const isMultiPack = variants.length > 1;
+  const pack = node('fieldset','','pack-picker' + (isMultiPack ? '' : ' single-pack-picker'));
+  pack.append(node('legend', isMultiPack ? 'Pack size' : 'Unit size'));
   const packButtons = variants.map(option=>{
     const choice=action('',()=>{
       variant=option;
@@ -373,7 +374,14 @@ function productCard(variants) {
   refreshCartButtons.set(actionWrap,updateCartButton);
   function updateTotal() {
     packButtons.forEach((choice,index)=>choice.setAttribute('aria-pressed',String(variants[index]===variant)));
-    total.textContent=money(variant.price)+' per pack';
+    const unitLower = String(variant.unit || '').toLowerCase();
+    let perLabel = ' per pack';
+    if (/^\d*\s*piece/i.test(unitLower)) perLabel = ' per piece';
+    else if (unitLower.includes('bunch') || unitLower.includes('katta')) perLabel = ' per bunch';
+    else if (unitLower.includes('bundle')) perLabel = ' per bundle';
+    else if (unitLower.includes('cob')) perLabel = ' per cob';
+    else if (!isMultiPack) perLabel = ' / ' + variant.unit;
+    total.textContent = money(variant.price) + perLabel;
     updateCartButton();
   }
   updateTotal();
@@ -445,8 +453,10 @@ function showProfile(current) {
   get('place-order').hidden=!profile;
   profileForm.hidden=!profile;
   get('use-saved').disabled=!profile?.address;
+  get('use-saved').hidden=!profile?.address;
   for(const field of ['username','name','phone','address','lat','lon']) profileForm.elements[field].value=profile?.[field] ?? '';
   get('profile-location-status').textContent=profile?.lat!=null && profile?.lon!=null ? 'Delivery location saved.' : 'Pin your GPS location for 1-tap checkout.';
+  populateCheckoutFromProfile();
 }
 async function loadProfile() {
   try { showProfile((await api('profile')).profile); }
@@ -498,6 +508,11 @@ get('logout').onclick=async event=>{
     get('history').replaceChildren();
     get('receipt').textContent='';
     checkout.reset();
+    if(addrHouse) addrHouse.value='';
+    if(addrColony) addrColony.value='';
+    if(deliveryBadgeCard) deliveryBadgeCard.hidden=true;
+    if(locationPickerBox) locationPickerBox.hidden=false;
+    if(savedAddrBadge) savedAddrBadge.hidden=true;
     coupon=undefined;
     get('coupon-status').textContent='';
     get('delivery-status').textContent='';
@@ -525,61 +540,229 @@ bind('profile-form',async data=>{
   status.classList.add('auth-field-error');
   status.textContent=error.message;
 });
+const LOCAL_DELIVERY_AREAS = [
+  { name: 'Bowenpally', lat: 17.4783, lon: 78.4883, landmark: 'Gandhinagar / Hasmathpet' },
+  { name: 'Alwal', lat: 17.5028, lon: 78.5085, landmark: 'Lothkunta / Temple Road' },
+  { name: 'Trimulgherry', lat: 17.4705, lon: 78.5042, landmark: 'Karkhana / Lal Bazar' },
+  { name: 'Malkajgiri', lat: 17.4526, lon: 78.5307, landmark: 'Anandbagh / Vani Nagar' },
+  { name: 'Neredmet', lat: 17.4819, lon: 78.5283, landmark: 'Safilguda / Sainikpuri' },
+  { name: 'Kompally', lat: 17.5312, lon: 78.4847, landmark: 'Suchitra / Petbasheerabad' },
+  { name: 'Begumpet', lat: 17.4447, lon: 78.4664, landmark: 'Prakash Nagar / Rasoolpura' },
+  { name: 'Balanagar', lat: 17.4623, lon: 78.4411, landmark: 'Ferozguda / Hal Colony' },
+  { name: 'Kukatpally', lat: 17.4849, lon: 78.4138, landmark: 'KPHB / Moosapet' },
+  { name: 'Tarnaka', lat: 17.4285, lon: 78.5348, landmark: 'Habsiguda / Osmania' },
+  { name: 'Secunderabad', lat: 17.4399, lon: 78.4983, landmark: 'Station / Marredpally' },
+  { name: 'ECIL', lat: 17.4721, lon: 78.5684, landmark: 'Kushaiguda / Moula Ali' }
+];
+
+const addrHouse = get('addr-house');
+const addrColony = get('addr-colony');
+const deliveryBadgeCard = get('delivery-badge-card');
+const deliveryBadgeArea = get('delivery-badge-area');
+const deliveryBadgeDist = get('delivery-badge-dist');
+const deliveryChangeBtn = get('delivery-change-btn');
+const locationPickerBox = get('location-picker-box');
+const savedAddrBadge = get('saved-addr-badge');
+
+function syncCheckoutAddress() {
+  const house = addrHouse?.value?.trim() || '';
+  const colony = addrColony?.value?.trim() || '';
+  if (checkout?.elements?.address) {
+    checkout.elements.address.value = [house, colony].filter(Boolean).join(', ');
+  }
+}
+addrHouse?.addEventListener('input', syncCheckoutAddress);
+addrColony?.addEventListener('input', syncCheckoutAddress);
+
+function renderQuickAreaChips() {
+  const container = get('quick-area-chips');
+  if (!container || container.childElementCount > 0) return;
+  container.replaceChildren(...LOCAL_DELIVERY_AREAS.map(item => {
+    const btn = node('button', item.name, 'area-chip');
+    btn.type = 'button';
+    btn.onclick = () => {
+      checkout.elements.lat.value = item.lat;
+      checkout.elements.lon.value = item.lon;
+      if (!addrColony?.value || LOCAL_DELIVERY_AREAS.some(a => addrColony.value.includes(a.name))) {
+        if (addrColony) addrColony.value = `${item.name}, ${item.landmark}`;
+        syncCheckoutAddress();
+      }
+      checkDelivery(checkout, 'delivery-status', false, item.name);
+      if (!addrHouse?.value && addrHouse) addrHouse.focus();
+    };
+    return btn;
+  }));
+}
+renderQuickAreaChips();
+
+if (deliveryChangeBtn) {
+  deliveryChangeBtn.onclick = () => {
+    if (locationPickerBox) locationPickerBox.hidden = false;
+    if (savedAddrBadge) savedAddrBadge.hidden = true;
+  };
+}
+
+function populateCheckoutFromProfile() {
+  if (!profile) return;
+  const hasExistingInput = Boolean(addrHouse?.value?.trim() || addrColony?.value?.trim());
+  if (!hasExistingInput && profile.address) {
+    const parts = profile.address.split(',').map(s => s.trim()).filter(Boolean);
+    if (parts.length > 1) {
+      if (addrHouse) addrHouse.value = parts[0];
+      if (addrColony) addrColony.value = parts.slice(1).join(', ');
+    } else {
+      if (addrHouse) addrHouse.value = profile.address;
+    }
+    syncCheckoutAddress();
+  }
+  if (!checkout.elements.phone.value && profile.phone) {
+    checkout.elements.phone.value = profile.phone.replace(/^\+?91/, '').replace(/\D/g, '').slice(-10);
+  }
+  if (profile.lat != null && profile.lon != null) {
+    checkout.elements.lat.value = profile.lat;
+    checkout.elements.lon.value = profile.lon;
+    if (savedAddrBadge) savedAddrBadge.hidden = false;
+    checkDelivery(checkout, 'delivery-status');
+  }
+}
+
 get('use-saved').onclick=()=>{
-  for(const field of ['address','phone','lat','lon']) checkout.elements[field].value=profile?.[field] ?? '';
-  if(coordinates(checkout).lat!==null && coordinates(checkout).lon!==null) checkDelivery(checkout,'delivery-status');
-  else get('delivery-status').textContent='Saved address loaded. Use your current location to check delivery.';
+  if (!profile) return;
+  const parts = (profile.address || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (parts.length > 1) {
+    if (addrHouse) addrHouse.value = parts[0];
+    if (addrColony) addrColony.value = parts.slice(1).join(', ');
+  } else {
+    if (addrHouse) addrHouse.value = profile.address || '';
+    if (addrColony) addrColony.value = '';
+  }
+  syncCheckoutAddress();
+  if (checkout.elements.phone && profile.phone) {
+    checkout.elements.phone.value = profile.phone.replace(/^\+?91/, '').replace(/\D/g, '').slice(-10);
+  }
+  checkout.elements.lat.value = profile.lat ?? '';
+  checkout.elements.lon.value = profile.lon ?? '';
+  if (savedAddrBadge) savedAddrBadge.hidden = false;
+  if (coordinates(checkout).lat !== null && coordinates(checkout).lon !== null) {
+    checkDelivery(checkout, 'delivery-status');
+  } else {
+    const statusEl = get('delivery-status');
+    if (statusEl) {
+      statusEl.textContent = 'Saved address loaded. Tap the GPS button or select your area to verify delivery distance.';
+      statusEl.hidden = false;
+    }
+  }
 };
+
 function locate(buttonId,form,status,onSuccess) {
   const button=get(buttonId);
+  if (!button) return;
   button.onclick=async()=>{
-    get(status).textContent='Finding your location…';
+    const statusEl=get(status);
+    if(statusEl) {
+      statusEl.textContent='Locating via GPS…';
+      statusEl.hidden=false;
+    }
     button.disabled=true;
     try {
       if(!navigator.geolocation) throw new Error('Location is unavailable in this browser.');
-      const {coords}=await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{timeout:12000}));
+      const {coords}=await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{timeout:12000,enableHighAccuracy:true}));
       form.elements.lat.value=coords.latitude;
       form.elements.lon.value=coords.longitude;
-      await onSuccess();
+      await onSuccess(coords);
     } catch(error) {
-      get(status).textContent=error.code===1
-        ? 'Allow location access in your browser, then try again.'
-        : 'Could not find your location. Check that location services are on, then try again.';
+      if(statusEl) {
+        statusEl.textContent=error.code===1
+          ? 'Location access denied. Please allow location access or choose your area above.'
+          : 'Could not detect your GPS location. Please check device location or choose your area above.';
+        statusEl.classList.add('status-error');
+        statusEl.hidden=false;
+      }
     } finally { button.disabled=false; }
   };
 }
-async function checkDelivery(form,status,copyToCheckout=false) {
+
+async function checkDelivery(form,status,copyToCheckout=false,manualAreaName=null) {
   const point=coordinates(form);
   const el=get(status);
-  el.classList.remove('status-ok','status-error');
+  el?.classList.remove('status-ok','status-error');
   try {
-    const {eligible,distanceKm}=await api('delivery/check',point);
+    const res=await api('delivery/check',point);
     const current=coordinates(form);
     if(point.lat!==current.lat || point.lon!==current.lon) return;
+    const {eligible,distanceKm,area,street}=res;
     const dist=Number.isFinite(distanceKm) ? ` (${distanceKm.toFixed(1)} km)` : '';
-    el.textContent=eligible ? '✓ Delivery available'+dist : 'Outside our delivery area'+dist+'.';
-    el.classList.add(eligible ? 'status-ok' : 'status-error');
+    const detectedArea = manualAreaName || area || street;
+
+    if(form===checkout) {
+      if(eligible) {
+        if(deliveryBadgeCard) {
+          deliveryBadgeCard.hidden=false;
+          deliveryBadgeCard.classList.remove('badge-error');
+          deliveryBadgeCard.classList.add('badge-ok');
+        }
+        if(deliveryBadgeArea) deliveryBadgeArea.textContent=detectedArea ? `Delivering to ${detectedArea}` : 'Delivery location verified';
+        if(deliveryBadgeDist) deliveryBadgeDist.textContent=`✓ Within fresh delivery zone${dist} · Morning doorstep delivery`;
+        if(locationPickerBox) locationPickerBox.hidden=true;
+        if(el) el.hidden=true;
+        if(!addrColony?.value && (street || area || manualAreaName)) {
+          addrColony.value=street || area || manualAreaName;
+          syncCheckoutAddress();
+        }
+      } else {
+        if(deliveryBadgeCard) {
+          deliveryBadgeCard.hidden=false;
+          deliveryBadgeCard.classList.remove('badge-ok');
+          deliveryBadgeCard.classList.add('badge-error');
+        }
+        if(deliveryBadgeArea) deliveryBadgeArea.textContent='Outside 20 km Delivery Area';
+        if(deliveryBadgeDist) deliveryBadgeDist.textContent=`Your location is${dist} from store. We currently deliver within 20 km.`;
+        if(el) {
+          el.textContent='Outside our delivery area'+dist+'.';
+          el.classList.add('status-error');
+          el.hidden=false;
+        }
+      }
+    } else {
+      if(el) {
+        el.textContent=eligible ? '✓ Delivery available'+dist+(detectedArea ? ` in ${detectedArea}` : '') : 'Outside our delivery area'+dist+'.';
+        el.classList.add(eligible ? 'status-ok' : 'status-error');
+        el.hidden=false;
+      }
+    }
+
     if(copyToCheckout && eligible) {
       checkout.elements.lat.value=point.lat;
       checkout.elements.lon.value=point.lon;
-      const checkoutStatus=get('delivery-status');
-      checkoutStatus.textContent='✓ Delivery available'+dist;
-      checkoutStatus.classList.remove('status-error');
-      checkoutStatus.classList.add('status-ok');
+      if(!addrColony?.value && (street || area || manualAreaName)) {
+        addrColony.value=street || area || manualAreaName;
+        syncCheckoutAddress();
+      }
+      checkDelivery(checkout,'delivery-status',false,detectedArea);
     }
   } catch(error) {
-    el.textContent=error.message;
-    el.classList.add('status-error');
+    if(el) {
+      el.textContent=error.message;
+      el.classList.add('status-error');
+      el.hidden=false;
+    }
   }
 }
+
 const preview=get('delivery-preview');
 preview.onsubmit=event=>event.preventDefault();
 locate('preview-locate',preview,'preview-status',()=>checkDelivery(preview,'preview-status',true));
-locate('locate',checkout,'delivery-status',()=>checkDelivery(checkout,'delivery-status'));
+locate('locate',checkout,'delivery-status',async coords=>{
+  await checkDelivery(checkout,'delivery-status');
+  if(!addrHouse?.value && addrHouse) addrHouse.focus();
+});
 locate('profile-locate',profileForm,'profile-location-status',async()=>{
   await checkDelivery(profileForm,'profile-location-status');
   const status=get('profile-location-status');
-  status.textContent+=' Save your profile to keep it.';
+  if(status) status.textContent+=' Save your profile to keep it.';
+  if(!profileForm.elements.address.value && addrColony?.value) {
+    profileForm.elements.address.value=addrColony.value;
+  }
 });
 checkout.elements.coupon.oninput=()=>{
   coupon=undefined;
@@ -613,10 +796,31 @@ let lastPlacedOrderId = null;
 bind('checkout',async data=>{
   if(!cart.size) throw new Error('Add products before placing an order.');
   if(!profile) return signInFrom('cart');
+  syncCheckoutAddress();
+  const house = addrHouse?.value?.trim() || '';
+  const colony = addrColony?.value?.trim() || '';
+  if(!house) {
+    addrHouse?.focus();
+    throw new Error('Please enter your House / Flat number and Building name.');
+  }
+  if(!colony) {
+    addrColony?.focus();
+    throw new Error('Please enter your Colony, Street, or Landmark.');
+  }
+  const rawPhone = (data.get('phone') || checkout.elements.phone?.value || '').replace(/\D/g, '').slice(-10);
+  if(rawPhone.length !== 10) {
+    checkout.elements.phone?.focus();
+    throw new Error('Please enter a valid 10-digit mobile number.');
+  }
   const point=coordinates(checkout);
-  if(point.lat===null || point.lon===null) throw new Error('Use your current location or a saved address before placing an order.');
+  if(point.lat===null || point.lon===null) {
+    if(locationPickerBox) locationPickerBox.hidden = false;
+    locationPickerBox?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    throw new Error('Please tap "Use my current GPS location" or choose your area above to confirm delivery.');
+  }
   const slotVal=data.get('slot') || get('slots')?.value || catalog?.slots?.[0]?.id || 'morning-slot';
-  const order={...coordinates(checkout),address:data.get('address'),phone:data.get('phone'),slot:slotVal,
+  const fullAddress = checkout.elements.address?.value || `${house}, ${colony}`;
+  const order={...coordinates(checkout),address:fullAddress,phone:rawPhone,slot:slotVal,
     consent:data.has('consent'),coupon:coupon?.code,total:payable(),items:[...cart.values()].map(({product,quantity})=>({id:product.id,quantity}))};
   const fingerprint=JSON.stringify(order);
   if(pending?.fingerprint!==fingerprint) pending={fingerprint,key:crypto.randomUUID()};
@@ -859,6 +1063,10 @@ function showPage() {
   window.scrollTo(0,0);
   currentCustomerPage = page;
   if(page==='orders') loadOrders();
+  if(page==='cart') {
+    populateCheckoutFromProfile();
+    renderQuickAreaChips();
+  }
 }
 
 let currentCustomerPage = 'home';
@@ -891,6 +1099,94 @@ document.addEventListener('click', event => {
   }
 });
 
+function initInviteShare() {
+  const inviteBtn = get('invite-btn');
+  const dialog = get('invite-dialog');
+  const closeBtn = get('close-invite-dialog');
+  const copyBtn = get('copy-invite-link-btn');
+  const copyText = get('copy-btn-text');
+  const waBtn = get('whatsapp-share-btn');
+  const moreBtn = get('native-share-btn');
+  const urlInput = get('invite-share-url');
+
+  if (!inviteBtn || !dialog) return;
+
+  const storeUrl = window.location.origin.includes('manakuragayalu.workers.dev')
+    ? 'https://shop.manakuragayalu.workers.dev'
+    : window.location.origin;
+  const shareTitle = 'Mana Kuragayalu - Fresh Farm Vegetables & Daily Essentials';
+  const shareText = `Order 100% farm-fresh, hand-picked local vegetables and groceries delivered to your doorstep!\n\nShop online at: ${storeUrl}`;
+
+  if (urlInput) urlInput.value = storeUrl;
+
+  if (waBtn) {
+    waBtn.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
+  }
+
+  inviteBtn.addEventListener('click', () => {
+    if (typeof dialog.showModal === 'function') {
+      dialog.showModal();
+    } else {
+      dialog.setAttribute('open', '');
+    }
+  });
+
+  closeBtn?.addEventListener('click', () => {
+    if (typeof dialog.close === 'function') dialog.close();
+    else dialog.removeAttribute('open');
+  });
+
+  dialog.addEventListener('click', (e) => {
+    if (e.target === dialog) {
+      if (typeof dialog.close === 'function') dialog.close();
+      else dialog.removeAttribute('open');
+    }
+  });
+
+  copyBtn?.addEventListener('click', async () => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(storeUrl);
+      } else {
+        urlInput.select();
+        document.execCommand('copy');
+      }
+      if (copyText) copyText.textContent = '✓ Copied!';
+      copyBtn.classList.add('is-copied');
+      notice('Store link copied to clipboard!');
+      setTimeout(() => {
+        if (copyText) copyText.textContent = '📋 Copy';
+        copyBtn.classList.remove('is-copied');
+      }, 2500);
+    } catch {
+      urlInput.select();
+      notice('Store link: ' + storeUrl);
+    }
+  });
+
+  moreBtn?.addEventListener('click', async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: storeUrl
+        });
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          notice('Share cancelled or not supported.');
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(storeUrl);
+        notice('Store link copied to clipboard!');
+      } catch {}
+    }
+  });
+}
+
+initInviteShare();
 drawCart();
 loadProfile().then(()=>{
   window.addEventListener('hashchange',showPage);

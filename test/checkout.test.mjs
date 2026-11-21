@@ -277,6 +277,17 @@ test('publishing ₹30 per kg creates all three priced variants and checkout cha
   assert.ok(updated.every(pack=>pack.name==='Updated Carrot' && pack.has_photo && pack.original_price===null));
   assert.equal(updated.find(pack=>pack.id===kilo.id).price,4800);
   assert.equal(updated.find(pack=>pack.id===kilo.id).stock,3);
+
+  // Delete the vegetable and verify all variants are removed from the catalog
+  const deleteResponse = await call('/api/admin/catalog/' + id, {
+    method: 'DELETE',
+    headers: { Origin: origin, Cookie: admin.split(';')[0] }
+  });
+  assert.equal(deleteResponse.status, 200);
+  assert.deepEqual(await deleteResponse.json(), { success: true, id });
+  const afterDelete = (await (await call('/api/catalog')).json()).products.filter(pack => pack.pack_group === id);
+  assert.equal(afterDelete.length, 0);
+  assert.equal(images.size, 0);
 });
 test('photo upload falls back seamlessly to D1 database when R2 storage is unavailable', async () => {
   const DB=localDatabase();
@@ -399,4 +410,16 @@ test('order placement and admin decisions trigger Manankuragayalu invoice emails
   assert.match(deliveredMail.subject, /Order Delivered/);
   assert.match(deliveredMail.htmlContent, /Manankuragayalu/);
   assert.match(deliveredMail.htmlContent, /Tomato/);
+
+  // Delivery & Revenue History API returns summary and daily breakdown
+  const historyRes = await backend.fetch(new Request(origin + '/api/admin/delivery-history', {
+    headers: { Origin: origin, Cookie: admin.split(';')[0] }
+  }), env);
+  assert.equal(historyRes.status, 200);
+  const historyData = await historyRes.json();
+  assert.equal(historyData.summary.total_delivered, 1);
+  assert.equal(historyData.summary.total_revenue, 10900);
+  assert.equal(historyData.days.length, 1);
+  assert.equal(historyData.days[0].delivered_count, 1);
+  assert.equal(historyData.days[0].daily_revenue, 10900);
 });

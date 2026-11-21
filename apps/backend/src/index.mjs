@@ -23,7 +23,36 @@ export default {
         return privateResponse({ error: 'Delivery location is being set up' }, 503);
       }
       try {
-        return privateResponse(deliveryEligibility(dispatch, point));
+        const result = deliveryEligibility(dispatch, point);
+        let addressDetails = {};
+        if (point?.resolveAddress !== false && result.eligible) {
+          try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 2000);
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${point.lat}&lon=${point.lon}&zoom=18&addressdetails=1`, {
+              headers: { 'User-Agent': 'Manankuragayalu/1.0 (manaveg083@gmail.com)' },
+              signal: controller.signal
+            });
+            clearTimeout(timer);
+            if (res.ok) {
+              const data = await res.json();
+              const addr = data.address || {};
+              const locality = addr.suburb || addr.neighbourhood || addr.residential || addr.subdistrict || addr.village || addr.town || addr.city_district || '';
+              const road = addr.road || addr.pedestrian || addr.footway || '';
+              const city = addr.city || addr.town || addr.county || 'Hyderabad';
+              const postcode = addr.postcode || '';
+              const area = [locality, city].filter(Boolean).join(', ');
+              const street = [road, locality].filter(Boolean).join(', ');
+              addressDetails = {
+                area: area || city,
+                street: street || area,
+                postcode,
+                displayName: data.display_name || ''
+              };
+            }
+          } catch {}
+        }
+        return privateResponse({ ...result, ...addressDetails });
       } catch (error) {
         if (!(error instanceof RangeError)) throw error;
         return privateResponse({ error: error.message }, 400);

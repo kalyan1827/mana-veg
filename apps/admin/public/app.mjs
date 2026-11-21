@@ -70,77 +70,322 @@ function whatsappInvoiceUrl(order) {
   ];
   return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(lines.join('\n'));
 }
+function getGoogleMapsUrl(order) {
+  const lat = Number(order.lat);
+  const lon = Number(order.lon);
+  if (Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 && (lat !== 0 || lon !== 0)) {
+    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`;
+  }
+  const query = encodeURIComponent((order.address || '').trim() || 'India');
+  return `https://www.google.com/maps/search/?api=1&query=${query}`;
+}
+
+function getPhoneTelUrl(phone) {
+  const digits = String(phone || '').replace(/\D/g, '');
+  if (!digits) return null;
+  return 'tel:' + (digits.length === 10 ? '+91' + digits : '+' + digits);
+}
+
+const expandedOrders = new Set();
+function elem(tag, className = '', textContent = '') {
+  const el = document.createElement(tag);
+  if (className) el.className = className;
+  if (textContent) el.textContent = textContent;
+  return el;
+}
+
 function bookingCard(order) {
-  const card = text('article','');
-  card.className = 'card' + (order.status === 'Placed' ? ' booking-card-pending' : '');
-  const status = {Placed:'Pending · Waiting Acceptance',Confirmed:'Accepted'}[order.status] ?? order.status;
-  card.append(text('strong',status+' · '+money(order.total)),text('p',order.id),
-    text('p',order.address+' · '+order.phone),text('p',order.slot_label),
-    text('p',JSON.parse(order.items).map(item=>item.name+' × '+item.quantity).join(', ')));
-  const controls = text('div','');
-  controls.className = 'actions';
+  const card = elem('article', 'card booking-card');
+  const isPending = order.status === 'Placed';
+  const isConfirmed = order.status === 'Confirmed';
+  const isDelivered = order.status === 'Delivered';
+  const isRejected = order.status === 'Rejected';
+
+  if (isPending) card.classList.add('booking-card-pending');
+  else if (isConfirmed) card.classList.add('booking-card-accepted');
+  else if (isDelivered) card.classList.add('booking-card-delivered');
+  else if (isRejected) card.classList.add('booking-card-rejected');
+
+  // Prominent Alert Banner for Pending Bookings
+  if (isPending) {
+    const alertBanner = elem('div', 'order-pending-alert');
+    const pulseDot = elem('span', 'pulse-dot', '●');
+    const alertText = elem('strong', '', 'NEW ORDER · AWAITING ACCEPTANCE');
+    alertBanner.append(pulseDot, alertText);
+    card.append(alertBanner);
+  }
+
+  const shortId = String(order.id).slice(0, 8).toUpperCase();
+  let items = [];
+  try { items = JSON.parse(order.items || '[]'); } catch {}
+  const totalPacks = items.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0);
+  const itemsSubtotal = items.reduce((sum, item) => sum + ((Number(item.price) || 0) * (Number(item.quantity) || 1)), 0);
+
+  // 1. Order Card Header
+  const header = elem('div', 'order-card-header');
+  const headerLeft = elem('div', 'order-header-left');
+  
+  const statusBadge = elem('span', 'order-status-badge ' + (
+    isPending ? 'badge-pending' :
+    isConfirmed ? 'badge-accepted' :
+    isDelivered ? 'badge-delivered' : 'badge-other'
+  ));
+  statusBadge.textContent = isPending ? '⏳ Awaiting Review' : (isConfirmed ? '🚚 Ready to Deliver' : order.status);
+
+  const idEl = elem('strong', 'order-short-id', '#' + shortId);
+
+  let timeStr = '';
+  if (order.created) {
+    const d = new Date(order.created);
+    timeStr = d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) +
+      ' · ' + d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  }
+  const timeEl = elem('span', 'order-time', timeStr);
+  headerLeft.append(statusBadge, idEl, timeEl);
+
+  const headerRight = elem('div', 'order-header-right');
+  const totalEl = elem('strong', 'order-total-amount', money(order.total));
+  const payTypeEl = elem('span', 'order-pay-pill', 'Cash on Delivery');
+  headerRight.append(totalEl, payTypeEl);
+  header.append(headerLeft, headerRight);
+
+  // 2. Customer Summary Row (clean address & slot info, no duplicate phone button)
+  const customerRow = elem('div', 'order-customer-row');
+  const addressShort = elem('span', 'order-address-preview', '📍 ' + (order.address || 'Standard delivery'));
+  const slotBadge = elem('span', 'order-slot-pill', '🚚 ' + (order.slot_label || 'Next day delivery'));
+  customerRow.append(addressShort, slotBadge);
+
+  // 3. Action Controls (Accept/Reject/Deliver, Directions, Call, WhatsApp)
+  const controls = elem('div', 'actions order-actions');
   if (['Placed','Confirmed'].includes(order.status)) {
-    const actions = order.status === 'Placed' ? [['accept','Accept'],['reject','Reject']] : [['deliver','Mark delivered']];
-    for (const [action,label] of actions) {
-      const button = text('button',label);
+    const actions = isPending
+      ? [['accept','✓ Accept booking','btn-action btn-action-accept'], ['reject','✕ Reject','btn-action btn-action-reject']]
+      : [['deliver','🚚 Mark Delivered','btn-action btn-action-deliver']];
+    for (const [action, label, btnClass] of actions) {
+      const button = elem('button', btnClass, label);
       button.type = 'button';
-      button.className = 'btn-action btn-action-' + action;
       button.onclick = async () => {
-        if (action === 'reject' && !window.confirm('Reject this booking and release its stock?')) return;
-        for (const control of controls.querySelectorAll('button')) control.disabled = true;
+        if (action === 'reject' && !window.confirm('Reject this booking and release its stock back to inventory?')) return;
+        for (const ctrl of controls.querySelectorAll('button')) ctrl.disabled = true;
         try {
-          await api('admin/orders/'+order.id+'/decision',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action})});
+          await api('admin/orders/' + order.id + '/decision', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action })
+          });
           if (action === 'accept') {
-            notice('Order #' + String(order.id).slice(0,8).toUpperCase() + ' accepted! Click "📲 WhatsApp Accepted Message" to notify customer.');
+            notice('🎉 Order #' + shortId + ' accepted! It is now Ready to Deliver.');
+          } else if (action === 'deliver') {
+            notice('✓ Order #' + shortId + ' marked as delivered!');
           }
           await loadBookings();
         } catch (error) { notice(error.message); }
-        finally { for (const control of controls.querySelectorAll('button')) control.disabled = false; }
+        finally { for (const ctrl of controls.querySelectorAll('button')) ctrl.disabled = false; }
       };
       controls.append(button);
     }
   }
+
+  // Directions Button (Google Maps GPS Turn-by-Turn navigation)
+  const mapsUrl = getGoogleMapsUrl(order);
+  const mapBtn = elem('a', 'btn-action btn-action-map', '🗺️ Directions');
+  mapBtn.href = mapsUrl;
+  mapBtn.target = '_blank';
+  mapBtn.rel = 'noopener noreferrer';
+  mapBtn.title = 'Open destination in Google Maps';
+  controls.append(mapBtn);
+
+  // Call Button (1-tap dialer showing customer's phone number clearly)
+  const telHref = getPhoneTelUrl(order.phone);
+  if (telHref) {
+    const callBtn = elem('a', 'btn-action btn-action-call', '📞 Call' + (order.phone ? ': ' + order.phone : ''));
+    callBtn.href = telHref;
+    callBtn.title = 'Call customer: ' + (order.phone || '');
+    controls.append(callBtn);
+  }
+
+  // WhatsApp Button
   const waUrl = whatsappInvoiceUrl(order);
   if (waUrl) {
-    const isAccepted = order.status === 'Confirmed';
-    const link = text('a', isAccepted ? '📲 WhatsApp Accepted Message' : 'WhatsApp Invoice');
-    link.href = waUrl;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    link.className = 'wa-invoice-btn' + (isAccepted ? ' wa-accepted-btn' : '');
-    controls.append(link);
+    const waLink = elem('a', 'btn-action wa-invoice-btn' + (isConfirmed ? ' wa-accepted-btn' : ''), isConfirmed ? '📲 WhatsApp Msg' : '📲 WhatsApp Invoice');
+    waLink.href = waUrl;
+    waLink.target = '_blank';
+    waLink.rel = 'noopener noreferrer';
+    controls.append(waLink);
   }
+
+  // 4. Down Arrow Accordion Toggle
+  const isExpanded = expandedOrders.has(order.id);
+  const toggleBtn = elem('button', 'order-expand-toggle' + (isExpanded ? ' is-expanded' : ''));
+  toggleBtn.type = 'button';
+  toggleBtn.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+
+  const packSummary = `${totalPacks} pack${totalPacks === 1 ? '' : 's'} (${items.length} item${items.length === 1 ? '' : 's'})`;
+  const toggleLabel = elem('span', 'order-expand-label', isExpanded
+    ? '▲ Hide items & details'
+    : `▼ View ${packSummary} & full address`);
+
+  const toggleIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  toggleIcon.setAttribute('class', 'order-expand-icon');
+  toggleIcon.setAttribute('viewBox', '0 0 24 24');
+  toggleIcon.setAttribute('width', '16');
+  toggleIcon.setAttribute('height', '16');
+  toggleIcon.setAttribute('fill', 'none');
+  toggleIcon.setAttribute('stroke', 'currentColor');
+  toggleIcon.setAttribute('stroke-width', '2.5');
+  toggleIcon.setAttribute('stroke-linecap', 'round');
+  toggleIcon.setAttribute('stroke-linejoin', 'round');
+  const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+  polyline.setAttribute('points', '6 9 12 15 18 9');
+  toggleIcon.append(polyline);
+  toggleBtn.append(toggleLabel, toggleIcon);
+
+  // 5. Expandable Drawer
+  const drawer = elem('div', 'order-details-drawer');
+  drawer.hidden = !isExpanded;
+
+  // Items List
+  const itemsContainer = elem('div', 'order-items-list');
+  const itemsTitle = elem('h4', 'order-drawer-title', 'Ordered Vegetables (' + items.length + ')');
+  itemsContainer.append(itemsTitle);
+
+  const itemsTable = elem('div', 'order-items-table');
+  for (const item of items) {
+    const itemRow = elem('div', 'order-item-row');
+    const itemName = elem('div', 'order-item-name');
+    itemName.append(elem('strong', '', item.name), elem('span', 'order-item-unit', ' (' + item.unit + ')'));
+    const itemQty = elem('span', 'order-item-qty', 'Qty: ' + item.quantity);
+    const itemPrice = elem('strong', 'order-item-price', money(item.price * item.quantity));
+    itemRow.append(itemName, itemQty, itemPrice);
+    itemsTable.append(itemRow);
+  }
+  itemsContainer.append(itemsTable);
+
+  // Full Delivery Information
+  const deliveryInfo = elem('div', 'order-delivery-block');
+  const addrHeading = elem('h4', 'order-drawer-title', 'Delivery & Destination');
+  const fullAddr = elem('p', 'order-full-address', '📍 ' + (order.address || 'Standard delivery'));
+  const mapInlineLink = elem('a', 'order-inline-map-link', '🗺️ Open destination in Google Maps ↗');
+  mapInlineLink.href = mapsUrl;
+  mapInlineLink.target = '_blank';
+  mapInlineLink.rel = 'noopener noreferrer';
+  const slotText = elem('p', 'order-slot-info', '🚚 Slot: ' + (order.slot_label || 'Next day delivery'));
+  deliveryInfo.append(addrHeading, fullAddr, mapInlineLink, slotText);
+
+  // Bill Summary
+  const billBlock = elem('div', 'order-bill-block');
+  const billHeading = elem('h4', 'order-drawer-title', 'Payment Breakdown');
+  const subtotalRow = elem('div', 'order-bill-row', '');
+  subtotalRow.append(elem('span', '', 'Items Subtotal:'), elem('strong', '', money(itemsSubtotal)));
+  billBlock.append(billHeading, subtotalRow);
+
+  if (Number(order.coupon_discount) > 0) {
+    const discRow = elem('div', 'order-bill-row discount-row', '');
+    discRow.append(
+      elem('span', '', `Coupon (${order.coupon_code || 'PROMO'}):`),
+      elem('strong', '', `-${money(order.coupon_discount)}`)
+    );
+    billBlock.append(discRow);
+  }
+
+  const feeRow = elem('div', 'order-bill-row', '');
+  feeRow.append(
+    elem('span', '', 'Delivery Fee:'),
+    elem('strong', '', Number(order.fee) === 0 ? 'FREE' : money(order.fee))
+  );
+
+  const grandTotalRow = elem('div', 'order-bill-row total-row', '');
+  grandTotalRow.append(elem('span', '', 'Total Due on Delivery:'), elem('strong', '', money(order.total)));
+  billBlock.append(feeRow, grandTotalRow);
+
+  drawer.append(itemsContainer, deliveryInfo, billBlock);
+
+  toggleBtn.onclick = () => {
+    const open = drawer.hidden;
+    drawer.hidden = !open;
+    toggleBtn.classList.toggle('is-expanded', open);
+    toggleBtn.setAttribute('aria-expanded', String(open));
+    toggleLabel.textContent = open
+      ? '▲ Hide items & details'
+      : `▼ View ${packSummary} & full address`;
+    if (open) expandedOrders.add(order.id);
+    else expandedOrders.delete(order.id);
+  };
+
+  card.append(header, customerRow);
   if (controls.childElementCount) card.append(controls);
+  card.append(toggleBtn, drawer);
+
   return card;
 }
+let currentBookingTab = 'pending';
+function switchBookingTab(tabKey) {
+  currentBookingTab = tabKey;
+  const tabs = document.querySelectorAll('.booking-tab');
+  const panes = document.querySelectorAll('.booking-pane');
+  tabs.forEach(tab => {
+    const match = tab.dataset.tab === tabKey;
+    tab.classList.toggle('is-active', match);
+    tab.setAttribute('aria-selected', String(match));
+  });
+  panes.forEach(pane => {
+    const match = pane.id === 'pane-' + tabKey;
+    pane.hidden = !match;
+    pane.classList.toggle('is-active', match);
+  });
+}
+
 let bookingRequest = 0;
 const renderedBookings = new Map();
 async function loadBookings() {
   const request = ++bookingRequest;
   const [today, all] = await Promise.all([api('admin/orders?today=1'),api('admin/orders')]);
   if (request !== bookingRequest) return;
+
+  const pendingList = all.orders.filter(order => order.status === 'Placed');
+  const acceptedList = all.orders.filter(order => order.status === 'Confirmed');
+  const deliveredList = all.orders.filter(order => order.status === 'Delivered');
+  const allList = all.orders;
+
+  const pendingBadge = get('badge-pending-count');
+  if (pendingBadge) pendingBadge.textContent = pendingList.length;
+  const acceptedBadge = get('badge-accepted-count');
+  if (acceptedBadge) acceptedBadge.textContent = acceptedList.length;
+  const deliveredBadge = get('badge-delivered-count');
+  if (deliveredBadge) deliveredBadge.textContent = deliveredList.length;
+  const allBadge = get('badge-all-count');
+  if (allBadge) allBadge.textContent = allList.length;
+
+  const tabPending = get('tab-pending');
+  if (tabPending) {
+    tabPending.classList.toggle('has-pending', pendingList.length > 0);
+  }
+
   const lists = [
-    ['pending-orders', all.orders.filter(order=>order.status==='Placed'), 'No pending bookings.'],
-    ['accepted-orders', all.orders.filter(order=>order.status==='Confirmed'), 'No accepted bookings.'],
-    ['delivered-orders', all.orders.filter(order=>order.status==='Delivered'), 'No delivered bookings.'],
+    ['pending-orders', pendingList, '🎉 No pending bookings. All customer orders have been reviewed!'],
+    ['accepted-orders', acceptedList, '🚚 No orders ready for delivery right now. Accept a pending order to queue it here!'],
+    ['delivered-orders', deliveredList, '📦 No delivered bookings recorded yet.'],
+    ['all-orders', allList, 'No customer orders placed yet.'],
     ['orders', all.orders.filter(order=>!['Placed','Confirmed','Delivered'].includes(order.status)), 'No other bookings.']
   ];
   for (const [id,orders,empty] of lists) {
+    const el = get(id);
+    if (!el) continue;
     const snapshot = JSON.stringify(orders);
     if (renderedBookings.get(id) === snapshot) continue;
-    get(id).replaceChildren(...(orders.length ? orders.map(bookingCard) : [text('p',empty)]));
+    el.replaceChildren(...(orders.length ? orders.map(bookingCard) : [text('p',empty)]));
     renderedBookings.set(id,snapshot);
   }
   const {total,pending,accepted,delivered,earnings}=today.counts;
-  get('stat-total').textContent=total;
-  get('stat-pending').textContent=pending;
-  get('stat-accepted').textContent=accepted;
-  get('stat-delivered').textContent=Number.isFinite(delivered) ? delivered : 0;
-  get('stat-revenue').textContent=money(Number.isFinite(earnings) ? earnings : 0);
+  if (get('stat-total')) get('stat-total').textContent=total;
+  if (get('stat-pending')) get('stat-pending').textContent=pending;
+  if (get('stat-accepted')) get('stat-accepted').textContent=accepted;
+  if (get('stat-delivered')) get('stat-delivered').textContent=Number.isFinite(delivered) ? delivered : 0;
+  if (get('stat-revenue')) get('stat-revenue').textContent=money(Number.isFinite(earnings) ? earnings : 0);
   const dateEl=get('dashboard-date');
   if (dateEl) dateEl.textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'Asia/Kolkata'});
   const activeSnap=JSON.stringify(today.orders);
-  if (renderedBookings.get('dashboard-active') !== activeSnap) {
+  if (get('dashboard-active') && renderedBookings.get('dashboard-active') !== activeSnap) {
     get('dashboard-active').replaceChildren(...(today.orders.length ? today.orders.slice(0,8).map(bookingCard) : [text('p','All caught up — no pending or accepted bookings right now.')]));
     renderedBookings.set('dashboard-active',activeSnap);
   }
@@ -261,33 +506,83 @@ function adminPhotoUrl(product) {
       row.append(text('strong',money(pack.price)));
       card.append(row);
     }
-    const edit=text('button','Edit product');
-    edit.type='button';
-    edit.onclick=()=>{
-      const fields=publishForm.elements;
+    const actions = text('div', '');
+    actions.className = 'catalog-card-actions';
+
+    const edit = text('button', '✏️ Edit');
+    edit.type = 'button';
+    edit.className = 'btn-catalog-edit';
+    edit.onclick = () => {
+      const fields = publishForm.elements;
       publishForm.reset();
-      editing={id:product.pack_group ?? product.id,photo:product.has_photo ? '/api/photos/'+product.id : '',
-        previousStock:Object.fromEntries(packs.map(pack=>[pack.id,pack.stock]))};
-      const base=packs.find(pack=>pack.unit==='1 kg') ?? product;
-      fields.name.value=product.name;
-      selectCategory(categories.find(category=>category.id===product.category));
-      fields.pricing.value=product.pack_group ? 'weight' : 'fixed';
-      fields.unit.value=base.unit;
-      fields.price.value=(base.original_price ?? base.price)/100;
-      fields.stock.value=base.stock;
-      fields.stock250.value=packs.find(pack=>pack.unit==='250 g')?.stock ?? 0;
-      fields.stock500.value=packs.find(pack=>pack.unit==='500 g')?.stock ?? 0;
-      fields.offer.checked=base.original_price>base.price;
-      fields.discount.value=fields.offer.checked ? (base.original_price-base.price)/100 : '';
-      const tags=JSON.parse(product.tags ?? '[]');
-      for(const checkbox of publishForm.querySelectorAll('[name="tags"]')) checkbox.checked=tags.includes(checkbox.value);
-      get('publish-action').textContent='Save and publish';
-      get('cancel-edit').hidden=false;
+      editing = {
+        id: product.pack_group ?? product.id,
+        photo: product.has_photo ? '/api/photos/' + product.id : '',
+        previousStock: Object.fromEntries(packs.map(pack => [pack.id, pack.stock]))
+      };
+      const base = packs.find(pack => pack.unit === '1 kg') ?? product;
+      fields.name.value = product.name;
+      selectCategory(categories.find(category => category.id === product.category));
+      const mode = product.pack_group ? 'weight' : 'fixed';
+      fields.pricing.value = mode;
+      const modeRadio = publishForm.querySelector(`[name="pricing_mode"][value="${mode}"]`);
+      if (modeRadio) modeRadio.checked = true;
+      fields.unit.value = base.unit;
+      fields.price.value = (base.original_price ?? base.price) / 100;
+      fields.stock.value = base.stock;
+      fields.stock250.value = packs.find(pack => pack.unit === '250 g')?.stock ?? 0;
+      fields.stock500.value = packs.find(pack => pack.unit === '500 g')?.stock ?? 0;
+      fields.offer.checked = base.original_price > base.price;
+      fields.discount.value = fields.offer.checked ? (base.original_price - base.price) / 100 : '';
+      const tags = JSON.parse(product.tags ?? '[]');
+      for (const checkbox of publishForm.querySelectorAll('[name="tags"]')) checkbox.checked = tags.includes(checkbox.value);
+      get('publish-action').textContent = 'Save and publish';
+      get('cancel-edit').hidden = false;
+      const deleteBtn = get('delete-edit');
+      if (deleteBtn) {
+        deleteBtn.hidden = false;
+        deleteBtn.onclick = async () => {
+          if (!window.confirm(`Are you sure you want to delete "${product.name}"?\nThis will remove it from the catalog and customer storefront immediately.`)) return;
+          deleteBtn.disabled = true;
+          try {
+            await api('admin/catalog/' + (product.pack_group ?? product.id), { method: 'DELETE' });
+            notice(`"${product.name}" deleted from store.`);
+            resetPublishForm();
+            await loadCatalog();
+          } catch (error) {
+            notice(error.message);
+            deleteBtn.disabled = false;
+          }
+        };
+      }
       previewPricing();
       previewPhoto();
       fields.name.focus();
+      window.scrollTo({ top: publishForm.offsetTop - 40, behavior: 'smooth' });
     };
-    card.append(edit);
+
+    const del = text('button', '🗑️ Delete');
+    del.type = 'button';
+    del.className = 'btn-catalog-delete';
+    del.title = 'Delete this vegetable from catalog';
+    del.onclick = async () => {
+      if (!window.confirm(`Are you sure you want to delete "${product.name}"?\nThis will remove it from the store and customer storefront immediately.`)) return;
+      del.disabled = true;
+      try {
+        await api('admin/catalog/' + (product.pack_group ?? product.id), { method: 'DELETE' });
+        notice(`"${product.name}" deleted from store.`);
+        if (editing && (editing.id === (product.pack_group ?? product.id))) {
+          resetPublishForm();
+        }
+        await loadCatalog();
+      } catch (error) {
+        notice(error.message);
+        del.disabled = false;
+      }
+    };
+
+    actions.append(edit, del);
+    card.append(actions);
     return card;
   }));
 }
@@ -308,8 +603,15 @@ let editing;
 function resetPublishForm() {
   editing=undefined;
   publishForm.reset();
+  publishForm.elements.pricing.value = 'weight';
+  const weightRadio = publishForm.querySelector('[name="pricing_mode"][value="weight"]');
+  if (weightRadio) weightRadio.checked = true;
+  publishForm.elements.stock250.value = '50';
+  publishForm.elements.stock500.value = '50';
+  publishForm.elements.stock.value = '50';
   get('publish-action').textContent='Publish vegetable';
   get('cancel-edit').hidden=true;
+  if (get('delete-edit')) get('delete-edit').hidden=true;
   ['publish-photo-error','publish-name-error','publish-category-error','publish-unit-error','publish-price-error','publish-stock250-error','publish-stock500-error','publish-stock-error','publish-discount-error','publish-general-error'].forEach(id => {
     const el = get(id);
     if (el) el.textContent = '';
@@ -326,11 +628,14 @@ get('cancel-edit').onclick=()=>{
 function previewPricing() {
   const {pricing,unit,price,stock250,stock500,offer,discount} = publishForm.elements;
   const byWeight = pricing.value === 'weight';
-  get('pricing-picker').hidden=Boolean(editing);
-  get('pricing-current').textContent = byWeight ? 'By kilogram' : 'Fixed pack';
-  get('fixed-unit').hidden = byWeight;
-  get('quarter-stock').hidden = !byWeight;
-  get('half-stock').hidden = !byWeight;
+  const pricingSection = publishForm.querySelector('.pricing-mode-section');
+  if (pricingSection) pricingSection.hidden = Boolean(editing);
+  const fixedGroup = get('fixed-unit-group');
+  if (fixedGroup) fixedGroup.hidden = byWeight;
+  const weightStocks = get('weight-stocks-group');
+  if (weightStocks) weightStocks.hidden = !byWeight;
+  const allStocks = get('all-stocks-group');
+  if (allStocks) allStocks.classList.toggle('is-fixed', !byWeight);
   unit.required = !byWeight;
   stock250.required = byWeight;
   stock500.required = byWeight;
@@ -340,23 +645,24 @@ function previewPricing() {
     clearFieldError('publish-stock250-error', stock250);
     clearFieldError('publish-stock500-error', stock500);
   }
-  get('price-caption').textContent = byWeight ? 'Price per kg (₹)' : 'Price per pack (₹)';
-  get('stock-label').textContent = byWeight ? '1 kg packs in stock' : 'Packs in stock';
+  get('price-caption').textContent = byWeight ? 'Price per kg (₹)' : 'Price per piece / unit (₹)';
+  get('stock-label').textContent = byWeight ? '1 kg packs in stock' : 'Stock in pieces / units';
   get('discount-field').hidden=!offer.checked;
   discount.disabled=!offer.checked;
   discount.required=offer.checked;
   if (!offer.checked) {
     clearFieldError('publish-discount-error', discount);
   }
-  get('discount-caption').textContent=byWeight ? 'Discount on the 1 kg pack (₹)' : 'Discount off each pack (₹)';
+  get('discount-caption').textContent=byWeight ? 'Discount on the 1 kg pack (₹)' : 'Discount off each piece / unit (₹)';
   const base=Math.round(Number(price.value)*100);
   const amount=offer.checked ? Math.round(Number(discount.value || NaN)*100) : 0;
   const paise=base-amount;
   const valid=Number.isFinite(amount) && amount>=1 && paise>=(byWeight ? 2 : 1);
   discount.setCustomValidity(offer.checked && Number.isFinite(amount) && !valid ? 'Enter a discount that leaves a valid selling price.' : '');
   get('pack-prices').textContent = paise >= (byWeight ? 2 : 1)
-    ? byWeight ? '250 g: '+money(Math.round(base/4))+' · 500 g: '+money(Math.round(base/2))+' · 1 kg: '+money(paise)
-      : 'Price per pack: '+money(paise)
+    ? byWeight
+      ? '250 g: '+money(Math.round(base/4))+' · 500 g: '+money(Math.round(base/2))+' · 1 kg: '+money(paise)
+      : 'Selling Price: '+money(paise)+(unit.value ? ' per '+unit.value : ' per piece')
     : '';
 }
 let previewUrl;
@@ -565,21 +871,25 @@ get('category-picker').addEventListener('keydown',event=>{
   }
 });
 publishForm.addEventListener('input',previewPricing);
-const pricingPicker = get('pricing-picker');
-for (const option of pricingPicker.querySelectorAll('[data-pricing]')) {
-  option.onclick = () => {
-    publishForm.elements.pricing.value = option.dataset.pricing;
+for (const radio of publishForm.querySelectorAll('[name="pricing_mode"]')) {
+  radio.addEventListener('change', () => {
+    publishForm.elements.pricing.value = radio.value;
+    if (radio.value === 'fixed' && !publishForm.elements.unit.value) {
+      publishForm.elements.unit.value = '1 piece';
+    }
     previewPricing();
-    pricingPicker.open = false;
-    get('pricing-current').focus();
-  };
+  });
 }
-pricingPicker.addEventListener('keydown',event=>{
-  if(event.key==='Escape') {
-    pricingPicker.open=false;
-    get('pricing-current').focus();
+const quickUnitChips = get('quick-unit-chips');
+if (quickUnitChips) {
+  for (const btn of quickUnitChips.querySelectorAll('[data-unit]')) {
+    btn.onclick = () => {
+      publishForm.elements.unit.value = btn.dataset.unit;
+      clearFieldError('publish-unit-error', publishForm.elements.unit);
+      previewPricing();
+    };
   }
-});
+}
 previewPricing();
 publishForm.onsubmit=async event=>{
   event.preventDefault();
@@ -853,10 +1163,66 @@ couponForm.onsubmit=async event=>{
   finally {button.disabled=false;}
 };
 
+async function loadDeliveryHistory() {
+  const listEl = get('daily-history-list');
+  if (!listEl) return;
+  try {
+    const data = await api('admin/delivery-history');
+    const { summary, days } = data;
+    if (get('hist-total-orders')) get('hist-total-orders').textContent = summary?.total_delivered ?? 0;
+    if (get('hist-total-revenue')) get('hist-total-revenue').textContent = money(summary?.total_revenue ?? 0);
+
+    if (!days || !days.length) {
+      listEl.replaceChildren(text('p', 'No delivered orders recorded yet. When orders are marked delivered, your daily earnings will appear here.'));
+      return;
+    }
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const yesterdayDate = new Date(Date.now() - 86400000);
+    const yesterdayStr = yesterdayDate.toISOString().slice(0, 10);
+
+    const rows = days.map(dayRow => {
+      const row = elem('div', 'daily-history-row');
+
+      const left = elem('div', 'daily-history-left');
+      let dateLabel = dayRow.day;
+      try {
+        const [y, m, d] = dayRow.day.split('-').map(Number);
+        const dt = new Date(y, m - 1, d);
+        const dayName = dt.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+        if (dayRow.day === todayStr) dateLabel = 'Today · ' + dayName;
+        else if (dayRow.day === yesterdayStr) dateLabel = 'Yesterday · ' + dayName;
+        else dateLabel = dayName;
+      } catch {}
+
+      const dayTitle = elem('strong', 'daily-history-date', dateLabel);
+      const countBadge = elem('span', 'daily-history-count', `✓ ${dayRow.delivered_count} order${dayRow.delivered_count === 1 ? '' : 's'} delivered`);
+      left.append(dayTitle, countBadge);
+
+      const right = elem('div', 'daily-history-right');
+      const revenueText = elem('strong', 'daily-history-revenue', money(dayRow.daily_revenue));
+      right.append(revenueText);
+
+      row.append(left, right);
+      return row;
+    });
+
+    listEl.replaceChildren(...rows);
+  } catch (error) {
+    listEl.replaceChildren(text('p', 'Could not load delivery history: ' + error.message));
+  }
+}
+
+get('refresh-history')?.addEventListener('click', () => {
+  loadDeliveryHistory();
+  notice('Delivery history updated.');
+});
+
 function showAdminPage() {
   const pages=['home','catalog','bookings','offers','profile'];
   const requested=location.hash.slice(1);
   const page=pages.includes(requested) ? requested : 'home';
+  document.body.dataset.page = page;
   for(const id of pages) get(id).hidden=!signedIn || id!==page;
   document.querySelector('header nav').hidden=!signedIn;
   get('admin-login').hidden=signedIn;
@@ -878,6 +1244,8 @@ function showAdminPage() {
     }).catch(error=>{
       status.textContent='Could not load coupons and audience options. '+error.message;
     });
+  } else if (page === 'profile') {
+    loadDeliveryHistory();
   }
   currentAdminPage = page;
   refreshVisibleBookings();
@@ -903,6 +1271,33 @@ function navigateAdminTab(targetHref) {
 }
 
 document.addEventListener('click', event => {
+  const tabBtn = event.target.closest('.booking-tab');
+  if (tabBtn && tabBtn.dataset.tab) {
+    switchBookingTab(tabBtn.dataset.tab);
+    return;
+  }
+
+  const statPending = event.target.closest('.dashboard-stat.stat-pending');
+  if (statPending) {
+    switchBookingTab('pending');
+    navigateAdminTab('#bookings');
+    return;
+  }
+
+  const statAccepted = event.target.closest('.dashboard-stat.stat-accepted');
+  if (statAccepted) {
+    switchBookingTab('accepted');
+    navigateAdminTab('#bookings');
+    return;
+  }
+
+  const statDelivered = event.target.closest('.dashboard-stat.stat-delivered');
+  if (statDelivered) {
+    switchBookingTab('delivered');
+    navigateAdminTab('#bookings');
+    return;
+  }
+
   const anchor = event.target.closest('a[href^="#"]');
   if (!anchor) return;
   const href = anchor.getAttribute('href');

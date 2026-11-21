@@ -1,234 +1,427 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#ffffff"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><title>Manakurgayalu</title><link rel="manifest" href="/manifest.webmanifest"><link rel="icon" type="image/jpeg" href="/logo.jpg"><link rel="apple-touch-icon" href="/logo.jpg"><link rel="stylesheet" href="/style.css"></head>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Manakurgayalu</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" type="image/jpeg" href="/logo.jpg">
+  <link rel="apple-touch-icon" href="/logo.jpg">
+  <link rel="stylesheet" href="/style.css">
+</head>
+
 <body>
-<header><a class="brand" href="#home"><img src="/logo.jpg" alt="Manakurgayalu logo" width="44" height="44"><span><strong>Manakurgayalu</strong><small>Fresh local vegetables</small></span></a><nav hidden aria-label="Shop navigation"><a href="#home"><svg class="footer-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-7 9 7v10H3z M9 20v-6h6v6"></path></svg>Home</a><a href="#categories"><svg class="footer-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"></path></svg>Categories</a><a href="#cart"><svg class="footer-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h3l3 12h11l3-8H6 M9 20h.01 M18 20h.01"></path></svg>Cart <span id="cart-count"></span></a><a href="#orders"><svg class="footer-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z M9 8h6 M9 12h6"></path></svg>Orders</a><a href="#profile"><svg class="footer-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a5 5 0 0 0-5-5H9a5 5 0 0 0-5 5v2 M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0"></path></svg>Profile</a></nav></header>
-<main>
-<output id="notice" aria-live="polite"></output>
-<section data-page="home" hidden><div class="hero"><p class="badge">Farm-fresh daily · Doorstep delivery</p><h1>Fresh vegetables & everyday essentials</h1></div><div class="shop-search"><input id="shop-search" type="search" aria-label="Search vegetables and groceries" placeholder="Search vegetables and groceries"></div><h2>Shop all products</h2><p id="catalog-mode" hidden>Demo catalog · sample prices and stock</p><div id="products" class="grid"></div></section>
-<section data-page="delivery" hidden>
-  <div class="delivery-hero">
-    <p class="badge">Doorstep Delivery Coverage</p>
-    <h1>Check delivery availability</h1>
-    <p>Confirm your location is within our fresh delivery zone before you shop.</p>
-  </div>
-  <form id="delivery-preview" class="panel delivery-check-card">
-    <input type="hidden" name="lat"><input type="hidden" name="lon">
-    <h2>Instant GPS check</h2>
-    <p class="checkout-hint">Tap below to check if your address is within our delivery zone.</p>
-    <div class="actions"><button type="button" id="preview-locate" class="cta-primary">Use my current location</button></div>
-    <p id="preview-status" class="status-banner" role="status"></p>
-    <div class="delivery-links">
-      <a class="cta-secondary" href="#home">Back to shopping</a>
-      <a class="wa-btn" href="https://wa.me/919398750721" target="_blank" rel="noopener noreferrer">Ask on WhatsApp</a>
-    </div>
-  </form>
-  <div class="delivery-info-grid">
-    <article class="card"><strong>Fast Local Delivery</strong><p>Fresh vegetables delivered directly to your doorstep.</p></article>
-    <article class="card"><strong>Low Delivery Fee</strong><p>₹49 flat fee — free delivery on qualifying orders.</p></article>
-    <article class="card"><strong>Pay on Delivery</strong><p>Pay conveniently with Cash or UPI when your order arrives.</p></article>
-  </div>
-</section>
-<section data-page="categories" hidden><h1>Categories</h1><div class="shop-search"><input id="category-search" type="search" aria-label="Search this category" placeholder="Search this category"></div><div id="category-filter" class="actions"></div><h2 id="category-title">Browse by category</h2><div id="category-products" class="grid"></div></section>
-<section data-page="cart" hidden>
-  <div class="cart-page-header">
-    <h1>Your cart</h1>
-    <a class="cart-continue-link" href="#home">+ Add more items</a>
-  </div>
-  <div id="receipt" class="receipt-card" aria-live="polite"></div>
-  <div id="cart"></div>
-  <div id="empty-cart" class="empty-state" hidden>
-    <span class="empty-state-emoji" aria-hidden="true">🛒</span>
-    <p>Your cart is empty.</p>
-    <small>Add fresh vegetables and everyday essentials to get started.</small>
-    <a id="browse" href="#home">Browse fresh vegetables</a>
-  </div>
-  <form class="panel checkout-card" id="checkout" hidden>
-    <h2>Delivery &amp; checkout</h2>
-    <p class="checkout-hint">Confirm your delivery location to place your order. Fresh produce is delivered the next day.</p>
-    <div class="checkout-section">
-      <h3>1. Delivery location</h3>
-      <input type="hidden" name="lat"><input type="hidden" name="lon">
-      <div class="checkout-btn-row">
-        <button type="button" id="use-saved" class="cta-outline">Use saved address</button>
-        <button type="button" id="locate" class="cta-outline">Use my current location</button>
+  <header><a class="brand" href="#home"><img src="/logo.jpg" alt="Manakurgayalu logo" width="44"
+        height="44"><span><strong>Manakurgayalu</strong><small>Fresh local vegetables</small></span></a>
+    <button type="button" id="invite-btn" class="header-invite-btn" title="Invite &amp; share store link" aria-label="Invite friends to Manakurgayalu">
+      <span class="invite-btn-icon" aria-hidden="true">🎁</span>
+      <span class="invite-btn-text">Invite</span>
+    </button>
+    <nav hidden aria-label="Shop navigation"><a href="#home"><svg class="footer-icon" aria-hidden="true"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round"
+          stroke-linejoin="round">
+          <path d="M3 10l9-7 9 7v10H3z M9 20v-6h6v6"></path>
+        </svg>Home</a><a href="#categories"><svg class="footer-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"></path>
+        </svg>Categories</a><a href="#cart"><svg class="footer-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 3h3l3 12h11l3-8H6 M9 20h.01 M18 20h.01"></path>
+        </svg>Cart <span id="cart-count"></span></a><a href="#orders"><svg class="footer-icon" aria-hidden="true"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round"
+          stroke-linejoin="round">
+          <path d="M6 3h12v18l-3-2-3 2-3-2-3 2z M9 8h6 M9 12h6"></path>
+        </svg>Orders</a><a href="#profile"><svg class="footer-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a5 5 0 0 0-5-5H9a5 5 0 0 0-5 5v2 M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0"></path>
+        </svg>Profile</a></nav>
+  </header>
+
+  <dialog id="invite-dialog" class="invite-dialog">
+    <div class="invite-dialog-card">
+      <button type="button" id="close-invite-dialog" class="invite-close-btn" aria-label="Close invite popup">✕</button>
+      <div class="invite-dialog-header">
+        <img src="/logo.jpg" alt="Mana Kuragayalu logo" class="invite-dialog-logo" width="60" height="60">
+        <h3>Invite Friends &amp; Family</h3>
+        <p>Share 100% farm-fresh local vegetables &amp; doorstep delivery with your friends and neighbors!</p>
       </div>
-      <p id="delivery-status" class="status-banner" aria-live="polite">Check your location to confirm delivery availability.</p>
+
+      <div class="invite-link-box">
+        <input type="text" id="invite-share-url" value="https://shop.manakuragayalu.workers.dev" readonly aria-label="Store link to share">
+        <button type="button" id="copy-invite-link-btn" class="btn-copy-link" aria-label="Copy store link">
+          <span id="copy-btn-text">📋 Copy</span>
+        </button>
+      </div>
+
+      <div class="invite-action-buttons">
+        <a id="whatsapp-share-btn" class="btn-invite-wa" target="_blank" rel="noopener noreferrer">
+          <svg class="wa-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+            <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm0 18.15c-1.52 0-3-.41-4.3-1.18l-.31-.18-3.19.84.85-3.11-.2-.32a8.21 8.21 0 0 1-1.26-4.29c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c0 4.54-3.7 8.23-8.26 8.23zm4.52-6.17c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.79.98-.14.17-.29.19-.54.07-.25-.12-1.05-.39-2-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43s-.56-1.34-.76-1.84c-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.84-.86 2.05s.88 2.38 1 2.55c.12.17 1.74 2.65 4.21 3.72.59.25 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.11-.22-.18-.47-.3z"/>
+          </svg>
+          <span>Share on WhatsApp</span>
+        </a>
+        <button type="button" id="native-share-btn" class="btn-invite-more">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="18" cy="5" r="3"></circle>
+            <circle cx="6" cy="12" r="3"></circle>
+            <circle cx="18" cy="19" r="3"></circle>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+          </svg>
+          <span>More Share Options</span>
+        </button>
+      </div>
     </div>
-    <div class="checkout-section">
-      <h3>2. Address &amp; contact</h3>
-      <label>Delivery address <span class="auth-required" aria-hidden="true">*</span><textarea name="address" rows="3" required maxlength="300" placeholder="Flat / House no., street, landmark"></textarea></label>
-      <label>Mobile number <span class="auth-required" aria-hidden="true">*</span><input name="phone" type="tel" required placeholder="10-digit mobile number"></label>
-    </div>
-    <div class="checkout-section">
-      <h3>3. Delivery schedule</h3>
-      <input type="hidden" name="slot" id="slots" value="morning-slot">
-      <div class="delivery-schedule-card">
-        <div class="delivery-schedule-header">
-          <span class="delivery-schedule-icon" aria-hidden="true">🚚</span>
-          <strong>Next day delivery</strong>
+  </dialog>
+  <main>
+    <output id="notice" aria-live="polite"></output>
+    <section data-page="home" hidden>
+      <div class="hero">
+        <p class="badge">Farm-fresh daily · Doorstep delivery</p>
+        <h1>Fresh vegetables & everyday essentials</h1>
+      </div>
+      <div class="shop-search"><input id="shop-search" type="search" aria-label="Search vegetables and groceries"
+          placeholder="Search vegetables and groceries"></div>
+      <h2>Shop all products</h2>
+      <p id="catalog-mode" hidden>Demo catalog · sample prices and stock</p>
+      <div id="products" class="grid"></div>
+    </section>
+    <section data-page="delivery" hidden>
+      <div class="delivery-hero">
+        <p class="badge">Doorstep Delivery Coverage</p>
+        <h1>Check delivery availability</h1>
+        <p>Confirm your location is within our fresh delivery zone before you shop.</p>
+      </div>
+      <form id="delivery-preview" class="panel delivery-check-card">
+        <input type="hidden" name="lat"><input type="hidden" name="lon">
+        <h2>Instant GPS check</h2>
+        <p class="checkout-hint">Tap below to check if your address is within our delivery zone.</p>
+        <div class="actions"><button type="button" id="preview-locate" class="cta-primary">Use my current
+            location</button></div>
+        <p id="preview-status" class="status-banner" role="status"></p>
+        <div class="delivery-links">
+          <a class="cta-secondary" href="#home">Back to shopping</a>
+          <a class="wa-btn" href="https://wa.me/919398750721" target="_blank" rel="noopener noreferrer">Ask on
+            WhatsApp</a>
         </div>
-        <p class="delivery-schedule-desc">Freshly harvested vegetables will be delivered directly to your doorstep tomorrow.</p>
+      </form>
+      <div class="delivery-info-grid">
+        <article class="card"><strong>Fast Local Delivery</strong>
+          <p>Fresh vegetables delivered directly to your doorstep.</p>
+        </article>
+        <article class="card"><strong>Low Delivery Fee</strong>
+          <p>₹49 flat fee — free delivery on qualifying orders.</p>
+        </article>
+        <article class="card"><strong>Pay on Delivery</strong>
+          <p>Pay conveniently with Cash or UPI when your order arrives.</p>
+        </article>
       </div>
-      <label class="consent-row"><input name="consent" type="checkbox"> <span>Send order updates on WhatsApp when available</span></label>
-    </div>
-    <div class="checkout-section">
-      <h3>4. Coupon code</h3>
-      <div class="coupon-row">
-        <input name="coupon" maxlength="32" autocomplete="off" aria-label="Coupon code" placeholder="Enter coupon code">
-        <button type="button" id="apply-coupon" class="cta-outline">Apply</button>
+    </section>
+    <section data-page="categories" hidden>
+      <h1>Categories</h1>
+      <div class="shop-search"><input id="category-search" type="search" aria-label="Search this category"
+          placeholder="Search this category"></div>
+      <div id="category-filter" class="actions"></div>
+      <h2 id="category-title">Browse by category</h2>
+      <div id="category-products" class="grid"></div>
+    </section>
+    <section data-page="cart" hidden>
+      <div class="cart-page-header">
+        <h1>Your cart</h1>
+        <a class="cart-continue-link" href="#home">+ Add more items</a>
       </div>
-      <p id="coupon-status" class="status-banner" role="status"></p>
-    </div>
-    <div class="payment-banner">
-      <strong>Payment on delivery</strong>
-      <span>Pay via Cash or UPI when your fresh produce arrives.</span>
-    </div>
-    <button id="place-order" class="cta-primary">Place order</button>
-    <button id="checkout-signin" type="button" class="cta-primary" hidden>Sign in to checkout</button>
-  </form>
-</section>
-<section data-page="orders" hidden>
-  <h1>My orders</h1>
-  <div id="history" aria-live="polite"></div>
-  <div id="empty-orders" class="empty-state" hidden>
-    <span class="empty-state-emoji" aria-hidden="true">📦</span>
-    <p role="status">No orders yet.</p>
-    <a href="#home">Back to shopping</a>
+      <div id="receipt" class="receipt-card" aria-live="polite"></div>
+      <div id="cart"></div>
+      <div id="empty-cart" class="empty-state" hidden>
+        <span class="empty-state-emoji" aria-hidden="true">🛒</span>
+        <p>Your cart is empty.</p>
+        <small>Add fresh vegetables and everyday essentials to get started.</small>
+        <a id="browse" href="#home">Browse fresh vegetables</a>
+      </div>
+      <form class="panel checkout-card" id="checkout" hidden>
+        <h2>Delivery &amp; checkout</h2>
+        <p class="checkout-hint">Confirm your delivery location to place your order. Fresh produce is delivered the next
+          day.</p>
+        <div class="checkout-section checkout-location-section">
+          <div class="checkout-section-head">
+            <h3>1. Delivery location</h3>
+            <span id="saved-addr-badge" class="saved-addr-badge" hidden>✓ Saved Address</span>
+          </div>
+          <input type="hidden" name="lat"><input type="hidden" name="lon">
+          <div id="delivery-badge-card" class="delivery-badge-card" hidden>
+            <div class="delivery-badge-icon" aria-hidden="true">📍</div>
+            <div class="delivery-badge-content">
+              <strong id="delivery-badge-area">Delivering to your area</strong>
+              <span id="delivery-badge-dist">Delivery available · Morning delivery</span>
+            </div>
+            <button type="button" id="delivery-change-btn" class="delivery-change-btn">Change</button>
+          </div>
+          <div id="location-picker-box" class="location-picker-box">
+            <button type="button" id="locate" class="locate-primary-btn">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="8" />
+                <line x1="12" y1="2" x2="12" y2="4" />
+                <line x1="12" y1="20" x2="12" y2="22" />
+                <line x1="2" y1="12" x2="4" y2="12" />
+                <line x1="20" y1="12" x2="22" y2="12" />
+                <circle cx="12" cy="12" r="2.5" fill="currentColor" />
+              </svg>
+              <span id="locate-btn-text">Use my current GPS location</span>
+            </button>
+            <button type="button" id="use-saved" class="cta-outline" hidden>Use saved address</button>
+            <div class="quick-area-wrap">
+              <span class="quick-area-title">Or choose your area in Secunderabad / Hyderabad:</span>
+              <div class="quick-area-chips" id="quick-area-chips" role="group" aria-label="Popular delivery areas">
+              </div>
+            </div>
+          </div>
+          <p id="delivery-status" class="status-banner" aria-live="polite">Tap the GPS button or choose your area above
+            to confirm delivery.</p>
+        </div>
+        <div class="checkout-section checkout-address-section">
+          <h3>2. Address &amp; contact</h3>
+          <input type="hidden" name="address" required>
+          <div class="address-fields">
+            <label class="field-item">
+              <span class="field-label">House / Flat No., Floor, Building Name <span class="auth-required"
+                  aria-hidden="true">*</span></span>
+              <input type="text" id="addr-house" required maxlength="120"
+                placeholder="e.g. Flat 302, 3rd Floor, Balaji Enclave" autocomplete="address-line1">
+            </label>
+            <label class="field-item">
+              <span class="field-label">Colony, Street &amp; Landmark <span class="auth-required"
+                  aria-hidden="true">*</span></span>
+              <input type="text" id="addr-colony" required maxlength="150"
+                placeholder="e.g. Temple Road, near Water Tank, Bowenpally" autocomplete="address-line2">
+            </label>
+            <label class="field-item">
+              <span class="field-label">Mobile number (for delivery updates) <span class="auth-required"
+                  aria-hidden="true">*</span></span>
+              <div class="phone-input-wrap">
+                <span class="phone-prefix">+91</span>
+                <input name="phone" type="tel" required pattern="[0-9]{10}" maxlength="10"
+                  placeholder="10-digit mobile number" autocomplete="tel">
+              </div>
+            </label>
+          </div>
+        </div>
+        <div class="checkout-section">
+          <h3>3. Delivery schedule</h3>
+          <input type="hidden" name="slot" id="slots" value="morning-slot">
+          <div class="delivery-schedule-card">
+            <div class="delivery-schedule-header">
+              <span class="delivery-schedule-icon" aria-hidden="true">🚚</span>
+              <strong>Next day delivery</strong>
+            </div>
+            <p class="delivery-schedule-desc">Freshly harvested vegetables will be delivered directly to your doorstep
+              tomorrow.</p>
+          </div>
+          <label class="consent-row"><input name="consent" type="checkbox"> <span>Send order updates on WhatsApp when
+              available</span></label>
+        </div>
+        <div class="checkout-section">
+          <h3>4. Coupon code</h3>
+          <div class="coupon-row">
+            <input name="coupon" maxlength="32" autocomplete="off" aria-label="Coupon code"
+              placeholder="Enter coupon code">
+            <button type="button" id="apply-coupon" class="cta-outline">Apply</button>
+          </div>
+          <p id="coupon-status" class="status-banner" role="status"></p>
+        </div>
+        <div class="payment-banner">
+          <strong>Payment on delivery</strong>
+          <span>Pay via Cash or UPI when your fresh produce arrives.</span>
+        </div>
+        <button id="place-order" class="cta-primary">Place order</button>
+        <button id="checkout-signin" type="button" class="cta-primary" hidden>Sign in to checkout</button>
+      </form>
+    </section>
+    <section data-page="orders" hidden>
+      <h1>My orders</h1>
+      <div id="history" aria-live="polite"></div>
+      <div id="empty-orders" class="empty-state" hidden>
+        <span class="empty-state-emoji" aria-hidden="true">📦</span>
+        <p role="status">No orders yet.</p>
+        <a href="#home">Back to shopping</a>
+      </div>
+      <button id="more-orders" hidden>Load more orders</button>
+    </section>
+    <section data-page="profile" hidden>
+      <div class="profile-hero">
+        <div class="profile-avatar" id="profile-avatar" aria-hidden="true">M</div>
+        <div class="profile-summary">
+          <div class="profile-heading">
+            <h1 id="profile-name">My profile</h1>
+            <span class="profile-pill" id="profile-badge">Guest</span>
+          </div>
+          <p id="account"></p>
+        </div>
+      </div>
+      <button id="profile-signin" type="button" class="profile-primary" hidden>Sign in or create an account</button>
+      <div class="profile-menu-card" aria-label="Quick actions">
+        <a class="profile-row" href="#orders">
+          <span class="profile-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 3h12v18l-3-2-3 2-3-2-3 2z M9 8h6 M9 12h6" />
+            </svg></span>
+          <span class="profile-row-body"><strong>My Orders</strong><span>Track status &amp; order history</span></span>
+          <span class="profile-row-chevron" aria-hidden="true">›</span>
+        </a>
+        <a class="profile-row" href="#delivery">
+          <span class="profile-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 21s-6-5.3-6-10a6 6 0 1 1 12 0c0 4.7-6 10-6 10z" />
+              <circle cx="12" cy="11" r="2.2" />
+            </svg></span>
+          <span class="profile-row-body"><strong>Delivery Check</strong><span>Check doorstep delivery for your
+              area</span></span>
+          <span class="profile-row-chevron" aria-hidden="true">›</span>
+        </a>
+        <a class="profile-row profile-row-wa" href="https://wa.me/919398750721" target="_blank"
+          rel="noopener noreferrer">
+          <span class="profile-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 20l1.2-4.8A8.5 8.5 0 1 1 21 11.5z" />
+            </svg></span>
+          <span class="profile-row-body"><strong>WhatsApp Us</strong><span>+91 9398750721 · Quick support</span></span>
+          <span class="profile-row-chevron" aria-hidden="true">›</span>
+        </a>
+      </div>
+      <form id="profile-form" class="panel" hidden>
+        <h2>Personal &amp; delivery details</h2>
+        <p class="profile-hint">Saved details auto-fill during checkout for faster ordering.</p>
+        <div class="profile-grid">
+          <label>Username <span class="auth-required" aria-hidden="true">*</span><input name="username"
+              autocomplete="username" pattern="[a-zA-Z0-9_]{3,24}" maxlength="24" required
+              title="3-24 letters, digits or underscores"></label>
+          <label>Full name <span class="auth-required" aria-hidden="true">*</span><input name="name" maxlength="100"
+              autocomplete="name" required></label>
+        </div>
+        <label>Mobile number<input name="phone" type="tel" autocomplete="tel"
+            placeholder="10-digit mobile number"></label>
+        <label>Default delivery address<textarea name="address" rows="3" maxlength="300" autocomplete="street-address"
+            placeholder="House/Flat no., street, landmark"></textarea></label>
+        <input type="hidden" name="lat"><input type="hidden" name="lon">
+        <div class="profile-location-box">
+          <button type="button" id="profile-locate">Use my current location</button>
+          <p id="profile-location-status" role="status"></p>
+        </div>
+        <button type="submit" class="profile-primary">Save profile</button>
+        <p id="profile-save-status" role="status"></p>
+      </form>
+      <section class="panel profile-support" id="support">
+        <h2>Store &amp; support</h2>
+        <dl class="profile-info-list">
+          <div>
+            <dt>Store</dt>
+            <dd>Manankuragayalu · Fresh local vegetables</dd>
+          </div>
+          <div>
+            <dt>Delivery</dt>
+            <dd>Doorstep delivery · Payment on delivery</dd>
+          </div>
+          <div>
+            <dt>Email</dt>
+            <dd>manaveg083@gmail.com</dd>
+          </div>
+        </dl>
+        <a class="wa-btn" href="https://wa.me/919398750721" target="_blank" rel="noopener noreferrer">Contact
+          Manankuragayalu on WhatsApp (+91 9398750721)</a>
+      </section>
+      <button id="logout" type="button" class="profile-logout" hidden>Log out</button>
+    </section>
+    <section data-page="welcome" aria-labelledby="auth-title" hidden>
+      <a id="auth-back" href="#home">Back to shopping</a>
+      <div class="welcome-card">
+        <h1 id="auth-title">Sign in</h1>
+        <p id="auth-description">We’ll email you a six-digit sign-in code.</p>
+        <form id="send" novalidate>
+          <div id="signup-username" hidden>
+            <label>Username <span class="auth-required" aria-hidden="true">*</span><input name="username"
+                autocomplete="username" pattern="[a-zA-Z0-9_]{3,24}" maxlength="24" required
+                aria-describedby="username-error username-hint"></label>
+            <p id="username-error" class="auth-field-error" aria-live="polite"></p>
+            <small id="username-hint">3–24 letters, numbers, or underscores.</small>
+          </div>
+          <div>
+            <label>Email address <span class="auth-required" aria-hidden="true">*</span><input name="email" type="email"
+                required autocomplete="email" autocapitalize="none" aria-describedby="email-error"></label>
+            <p id="email-error" class="auth-field-error" aria-live="polite"></p>
+          </div>
+          <button id="send-auth-code">Send sign-in code</button>
+        </form>
+        <p id="login-status" role="status"></p>
+        <form id="verify" novalidate hidden>
+          <div>
+            <label>Six-digit code <span class="auth-required" aria-hidden="true">*</span><input name="code" required
+                pattern="[0-9]{6}" maxlength="6" inputmode="numeric" autocomplete="one-time-code"
+                aria-describedby="code-error"></label>
+            <p id="code-error" class="auth-field-error" aria-live="polite"></p>
+          </div>
+          <button>Verify and continue</button>
+        </form>
+        <p id="auth-alternative">New here? <a href="#signup">Create an account</a></p>
+      </div>
+    </section>
+  </main>
+  <div id="delivery-offer-banner" class="cart-bar" hidden>
+    <svg class="delivery-bike-logo" viewBox="0 0 48 36" aria-hidden="true">
+      <path fill="#cfe0d4" d="M2 22h44v3H2zM8 27h32v2H8z" />
+      <g fill="#1b7a37">
+        <circle cx="13" cy="27" r="5" />
+        <circle cx="37" cy="27" r="5" />
+        <path d="M13 18h10l3 5h6l-3-10h4l5 10v4H13a4.5 4.5 0 0 1 0-9z" />
+        <path d="M28 11h7v2h-7z" />
+      </g>
+      <rect x="8" y="9" width="13" height="9" rx="2" fill="#e67e22" />
+      <path d="M12 12h5v2h-5z" fill="#ffffff" />
+      <g fill="#ffffff">
+        <circle cx="13" cy="27" r="1.8" />
+        <circle cx="37" cy="27" r="1.8" />
+      </g>
+    </svg>
+    <span id="delivery-offer-message"></span>
   </div>
-  <button id="more-orders" hidden>Load more orders</button>
-</section>
-<section data-page="profile" hidden>
-  <div class="profile-hero">
-    <div class="profile-avatar" id="profile-avatar" aria-hidden="true">M</div>
-    <div class="profile-summary">
-      <div class="profile-heading">
-        <h1 id="profile-name">My profile</h1>
-        <span class="profile-pill" id="profile-badge">Guest</span>
+  <a id="cart-bar" class="cart-floating-bar" href="#cart" hidden>
+    <div class="cart-bar-progress delivery-progress" hidden>
+      <div class="cart-bar-progress-label">
+        <span class="delivery-bike-icon" aria-hidden="true">🚚</span>
+        <span class="delivery-progress-status" aria-live="polite"></span>
       </div>
-      <p id="account"></p>
+      <div class="cart-bar-progress-track">
+        <div class="cart-bar-progress-fill"></div>
+      </div>
+      <progress class="delivery-progress-native" aria-label="Progress toward free delivery" hidden></progress>
     </div>
-  </div>
-  <button id="profile-signin" type="button" class="profile-primary" hidden>Sign in or create an account</button>
-  <div class="profile-menu-card" aria-label="Quick actions">
-    <a class="profile-row" href="#orders">
-      <span class="profile-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z M9 8h6 M9 12h6"/></svg></span>
-      <span class="profile-row-body"><strong>My Orders</strong><span>Track status &amp; order history</span></span>
-      <span class="profile-row-chevron" aria-hidden="true">›</span>
-    </a>
-    <a class="profile-row" href="#delivery">
-      <span class="profile-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.3-6-10a6 6 0 1 1 12 0c0 4.7-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/></svg></span>
-      <span class="profile-row-body"><strong>Delivery Check</strong><span>Check doorstep delivery for your area</span></span>
-      <span class="profile-row-chevron" aria-hidden="true">›</span>
-    </a>
-    <a class="profile-row profile-row-wa" href="https://wa.me/919398750721" target="_blank" rel="noopener noreferrer">
-      <span class="profile-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 20l1.2-4.8A8.5 8.5 0 1 1 21 11.5z"/></svg></span>
-      <span class="profile-row-body"><strong>WhatsApp Us</strong><span>+91 9398750721 · Quick support</span></span>
-      <span class="profile-row-chevron" aria-hidden="true">›</span>
-    </a>
-  </div>
-  <form id="profile-form" class="panel" hidden>
-    <h2>Personal &amp; delivery details</h2>
-    <p class="profile-hint">Saved details auto-fill during checkout for faster ordering.</p>
-    <div class="profile-grid">
-      <label>Username <span class="auth-required" aria-hidden="true">*</span><input name="username" autocomplete="username" pattern="[a-zA-Z0-9_]{3,24}" maxlength="24" required title="3-24 letters, digits or underscores"></label>
-      <label>Full name <span class="auth-required" aria-hidden="true">*</span><input name="name" maxlength="100" autocomplete="name" required></label>
+    <div class="cart-bar-pill">
+      <div id="cart-pill-thumbs" class="cart-pill-thumbs"></div>
+      <div class="cart-pill-text">
+        <strong class="cart-pill-title">View cart</strong>
+        <span id="cart-bar-count" class="cart-pill-meta" aria-live="polite"></span>
+      </div>
+      <div class="cart-pill-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.8" fill="none"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </div>
     </div>
-    <label>Mobile number<input name="phone" type="tel" autocomplete="tel" placeholder="10-digit mobile number"></label>
-    <label>Default delivery address<textarea name="address" rows="3" maxlength="300" autocomplete="street-address" placeholder="House/Flat no., street, landmark"></textarea></label>
-    <input type="hidden" name="lat"><input type="hidden" name="lon">
-    <div class="profile-location-box">
-      <button type="button" id="profile-locate">Use my current location</button>
-      <p id="profile-location-status" role="status"></p>
-    </div>
-    <button type="submit" class="profile-primary">Save profile</button>
-    <p id="profile-save-status" role="status"></p>
-  </form>
-  <section class="panel profile-support" id="support">
-    <h2>Store &amp; support</h2>
-    <dl class="profile-info-list">
-      <div><dt>Store</dt><dd>Manankuragayalu · Fresh local vegetables</dd></div>
-      <div><dt>Delivery</dt><dd>Doorstep delivery · Payment on delivery</dd></div>
-      <div><dt>Email</dt><dd>manaveg083@gmail.com</dd></div>
-    </dl>
-    <a class="wa-btn" href="https://wa.me/919398750721" target="_blank" rel="noopener noreferrer">Contact Manankuragayalu on WhatsApp (+91 9398750721)</a>
-  </section>
-  <button id="logout" type="button" class="profile-logout" hidden>Log out</button>
-</section>
-<section data-page="welcome" aria-labelledby="auth-title" hidden>
-  <a id="auth-back" href="#home">Back to shopping</a>
-  <div class="welcome-card">
-    <h1 id="auth-title">Sign in</h1>
-    <p id="auth-description">We’ll email you a six-digit sign-in code.</p>
-    <form id="send" novalidate>
-      <div id="signup-username" hidden>
-        <label>Username <span class="auth-required" aria-hidden="true">*</span><input name="username" autocomplete="username" pattern="[a-zA-Z0-9_]{3,24}" maxlength="24" required aria-describedby="username-error username-hint"></label>
-        <p id="username-error" class="auth-field-error" aria-live="polite"></p>
-        <small id="username-hint">3–24 letters, numbers, or underscores.</small>
-      </div>
-      <div>
-        <label>Email address <span class="auth-required" aria-hidden="true">*</span><input name="email" type="email" required autocomplete="email" autocapitalize="none" aria-describedby="email-error"></label>
-        <p id="email-error" class="auth-field-error" aria-live="polite"></p>
-      </div>
-      <button id="send-auth-code">Send sign-in code</button>
-    </form>
-    <p id="login-status" role="status"></p>
-    <form id="verify" novalidate hidden>
-      <div>
-        <label>Six-digit code <span class="auth-required" aria-hidden="true">*</span><input name="code" required pattern="[0-9]{6}" maxlength="6" inputmode="numeric" autocomplete="one-time-code" aria-describedby="code-error"></label>
-        <p id="code-error" class="auth-field-error" aria-live="polite"></p>
-      </div>
-      <button>Verify and continue</button>
-    </form>
-    <p id="auth-alternative">New here? <a href="#signup">Create an account</a></p>
-  </div>
-</section>
-</main>
-<div id="delivery-offer-banner" class="cart-bar" hidden>
-  <svg class="delivery-bike-logo" viewBox="0 0 48 36" aria-hidden="true">
-    <path fill="#cfe0d4" d="M2 22h44v3H2zM8 27h32v2H8z"/>
-    <g fill="#1b7a37">
-      <circle cx="13" cy="27" r="5"/>
-      <circle cx="37" cy="27" r="5"/>
-      <path d="M13 18h10l3 5h6l-3-10h4l5 10v4H13a4.5 4.5 0 0 1 0-9z"/>
-      <path d="M28 11h7v2h-7z"/>
-    </g>
-    <rect x="8" y="9" width="13" height="9" rx="2" fill="#e67e22"/>
-    <path d="M12 12h5v2h-5z" fill="#ffffff"/>
-    <g fill="#ffffff"><circle cx="13" cy="27" r="1.8"/><circle cx="37" cy="27" r="1.8"/></g>
-  </svg>
-  <span id="delivery-offer-message"></span>
-</div>
-<a id="cart-bar" class="cart-floating-bar" href="#cart" hidden>
-  <div class="cart-bar-progress delivery-progress" hidden>
-    <div class="cart-bar-progress-label">
-      <span class="delivery-bike-icon" aria-hidden="true">🚚</span>
+  </a>
+  <div id="cart-checkout-bar" class="cart-bar cart-checkout-bar" hidden>
+    <span class="delivery-progress" hidden>
       <span class="delivery-progress-status" aria-live="polite"></span>
-    </div>
-    <div class="cart-bar-progress-track">
-      <div class="cart-bar-progress-fill"></div>
-    </div>
-    <progress class="delivery-progress-native" aria-label="Progress toward free delivery" hidden></progress>
+      <progress aria-label="Progress toward free delivery"></progress>
+    </span>
+    <span>Due on delivery <strong id="cart-pay-total" aria-live="polite"></strong></span>
+    <button type="button" id="cart-continue">Delivery details</button>
   </div>
-  <div class="cart-bar-pill">
-    <div id="cart-pill-thumbs" class="cart-pill-thumbs"></div>
-    <div class="cart-pill-text">
-      <strong class="cart-pill-title">View cart</strong>
-      <span id="cart-bar-count" class="cart-pill-meta" aria-live="polite"></span>
-    </div>
-    <div class="cart-pill-arrow" aria-hidden="true">
-      <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.8" fill="none" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="9 18 15 12 9 6"></polyline>
-      </svg>
-    </div>
-  </div>
-</a>
-<div id="cart-checkout-bar" class="cart-bar cart-checkout-bar" hidden>
-  <span class="delivery-progress" hidden>
-    <span class="delivery-progress-status" aria-live="polite"></span>
-    <progress aria-label="Progress toward free delivery"></progress>
-  </span>
-  <span>Due on delivery <strong id="cart-pay-total" aria-live="polite"></strong></span>
-  <button type="button" id="cart-continue">Delivery details</button>
-</div>
-<script type="module" src="/app.mjs"></script></body></html>
+  <script type="module" src="/app.mjs"></script>
+</body>
+
+</html>

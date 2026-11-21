@@ -4,7 +4,7 @@ import { validUsername } from './auth.mjs';
 import { notifyOrderPlaced, notifyOrderDecision } from './notifications.mjs';
 
 const idPattern = /^[a-zA-Z0-9-]{1,80}$/;
-const orderFields = 'id,address,phone,slot_label,items,fee,total,status,collected,created,coupon_code,coupon_discount';
+const orderFields = 'id,email,address,phone,lat,lon,slot_label,items,fee,total,status,collected,created,coupon_code,coupon_discount';
 const getRows = async statement => (await statement.all()).results;
 const couponAudiences = [
   {id:'everyone',label:'Everyone',default:true},
@@ -192,6 +192,17 @@ export async function shopRoutes(request, db, path, reply, photos, demo = false,
     }
     return reply({ orders: await getRows(db.prepare('SELECT ' + orderFields + ' FROM orders ORDER BY created DESC LIMIT 100')) });
   }
+  if (path === '/api/admin/delivery-history' && method === 'GET') {
+    const summary = await db.prepare(`SELECT COUNT(*) AS total_delivered, COALESCE(SUM(total),0) AS total_revenue
+      FROM orders WHERE status='Delivered'`).first();
+    const days = await getRows(db.prepare(`SELECT
+      date(COALESCE(delivered_at,created)/1000 + 19800, 'unixepoch') AS day,
+      COUNT(*) AS delivered_count,
+      COALESCE(SUM(total),0) AS daily_revenue
+      FROM orders WHERE status='Delivered'
+      GROUP BY day ORDER BY day DESC LIMIT 60`));
+    return reply({ summary, days });
+  }
   const decisionId = /^\/api\/admin\/orders\/([a-zA-Z0-9-]{1,80})\/decision$/.exec(path)?.[1];
   if (decisionId && method === 'POST') {
     const input = await request.json().catch(() => null);
@@ -217,6 +228,23 @@ export async function shopRoutes(request, db, path, reply, photos, demo = false,
     return reply({ categories, products, demo });
   }
   const editId = /^\/api\/admin\/catalog\/([a-zA-Z0-9-]{1,80})$/.exec(path)?.[1];
+  if (editId && method === 'DELETE') {
+    const item = await db.prepare('SELECT id, pack_group, photo FROM products WHERE id=? OR pack_group=?').bind(editId, editId).first();
+    if (!item) return reply({ error: 'Product not found' }, 404);
+    const rootId = item.pack_group || item.id;
+    const allMatching = await getRows(db.prepare('SELECT id, photo FROM products WHERE id=? OR pack_group=?').bind(rootId, rootId));
+    for (const row of allMatching) {
+      if (row.photo) {
+        if (photos) {
+          try { await photos.delete(row.photo); } catch {}
+        }
+        try { await db.prepare('DELETE FROM product_photos WHERE id=?').bind(row.photo).run(); } catch {}
+      }
+    }
+    await db.prepare('DELETE FROM products WHERE pack_group=?').bind(rootId).run();
+    await db.prepare('DELETE FROM products WHERE id=?').bind(rootId).run();
+    return reply({ success: true, id: rootId });
+  }
   if ((path === '/api/admin/catalog' && method === 'POST') || (editId && method === 'PUT')) {
     const multipart = request.headers.get('Content-Type')?.startsWith('multipart/form-data');
     const form = multipart ? await request.formData().catch(() => null) : null;

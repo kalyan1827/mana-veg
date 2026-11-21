@@ -60,40 +60,75 @@
         <p id="publish-category-error" class="field-error" role="status"></p>
       </div>
     </div>
-    <div class="category-picker">
-      <span id="pricing-label">Pricing method</span>
-      <details id="pricing-picker">
-        <summary id="pricing-current" aria-labelledby="pricing-label pricing-current">By kilogram</summary>
-        <div class="picker-options">
-          <button type="button" data-pricing="weight">By kilogram</button>
-          <button type="button" data-pricing="fixed">Fixed pack</button>
+    <div class="pricing-selling-row">
+      <div class="pricing-mode-section">
+        <span class="pricing-mode-label">Selling Type</span>
+        <div class="pricing-mode-pills" role="radiogroup" aria-label="Pricing and selling type">
+          <label class="pricing-pill">
+            <input type="radio" name="pricing_mode" value="weight" checked>
+            <span class="pill-track">
+              <strong>⚖️ By Weight</strong>
+              <small>250g, 500g &amp; 1kg</small>
+            </span>
+          </label>
+          <label class="pricing-pill">
+            <input type="radio" name="pricing_mode" value="fixed">
+            <span class="pill-track">
+              <strong>🥥 By Piece / Bunch</strong>
+              <small>Per count or bunch</small>
+            </span>
+          </label>
         </div>
-      </details>
-      <input type="hidden" name="pricing" value="weight">
+        <input type="hidden" name="pricing" value="weight">
+      </div>
+
+      <div class="pricing-inputs-column">
+        <div id="fixed-unit-group" class="fixed-unit-group" hidden>
+          <label id="fixed-unit">
+            <span>Unit / Measure <span class="field-error" aria-hidden="true">*</span></span>
+            <input name="unit" placeholder="e.g. 1 piece, 1 bunch, 4 pieces" maxlength="40" aria-describedby="publish-unit-error">
+          </label>
+          <div class="quick-unit-chips" id="quick-unit-chips">
+            <button type="button" class="unit-chip" data-unit="1 piece">1 Piece</button>
+            <button type="button" class="unit-chip" data-unit="1 bunch">1 Bunch (Katta)</button>
+            <button type="button" class="unit-chip" data-unit="1 bundle">1 Bundle</button>
+            <button type="button" class="unit-chip" data-unit="4 pieces">4 Pieces (Lemons)</button>
+            <button type="button" class="unit-chip" data-unit="6 pieces">6 Pieces</button>
+            <button type="button" class="unit-chip" data-unit="1 cob">1 Cob (Corn)</button>
+            <button type="button" class="unit-chip" data-unit="1 pack">1 Pack</button>
+          </div>
+          <p id="publish-unit-error" class="field-error" role="status"></p>
+        </div>
+
+        <label id="price-label">
+          <span id="price-caption">Price per kg (₹)</span>
+          <input name="price" type="text" inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?|[.][0-9]{1,2}" required aria-describedby="publish-price-error">
+        </label>
+        <p id="publish-price-error" class="field-error" role="status"></p>
+        <p id="pack-prices" aria-live="polite"></p>
+      </div>
     </div>
-    <label id="fixed-unit" hidden>Pack size
-      <input name="unit" placeholder="e.g. 6 eggs, 1 bundle" maxlength="40" aria-describedby="publish-unit-error">
-    </label>
-    <p id="publish-unit-error" class="field-error" role="status"></p>
-    <label id="price-label">
-      <span id="price-caption">Price per kg (₹)</span>
-      <input name="price" type="text" inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?|[.][0-9]{1,2}" required aria-describedby="publish-price-error">
-    </label>
-    <p id="publish-price-error" class="field-error" role="status"></p>
-    <p id="pack-prices" aria-live="polite"></p>
-    <label id="quarter-stock">250 g packs in stock
-      <input name="stock250" type="text" inputmode="numeric" pattern="[0-9]{1,6}" value="0" required aria-describedby="publish-stock250-error">
-    </label>
-    <p id="publish-stock250-error" class="field-error" role="status"></p>
-    <label id="half-stock">500 g packs in stock
-      <input name="stock500" type="text" inputmode="numeric" pattern="[0-9]{1,6}" value="0" required aria-describedby="publish-stock500-error">
-    </label>
-    <p id="publish-stock500-error" class="field-error" role="status"></p>
-    <label>
-      <span id="stock-label">1 kg packs in stock</span>
-      <input name="stock" type="text" inputmode="numeric" pattern="[0-9]{1,6}" required aria-describedby="publish-stock-error">
-    </label>
-    <p id="publish-stock-error" class="field-error" role="status"></p>
+
+    <div id="all-stocks-group" class="all-stocks-group">
+      <div id="weight-stocks-group" class="weight-stocks-group">
+        <label id="quarter-stock"><span>250 g packs in stock</span>
+          <input name="stock250" type="text" inputmode="numeric" pattern="[0-9]{1,6}" value="50" required aria-describedby="publish-stock250-error">
+        </label>
+        <label id="half-stock"><span>500 g packs in stock</span>
+          <input name="stock500" type="text" inputmode="numeric" pattern="[0-9]{1,6}" value="50" required aria-describedby="publish-stock500-error">
+        </label>
+      </div>
+      <label id="main-stock-label" class="main-stock-label">
+        <span id="stock-label">1 kg packs in stock</span>
+        <input name="stock" type="text" inputmode="numeric" pattern="[0-9]{1,6}" value="50" required aria-describedby="publish-stock-error">
+      </label>
+    </div>
+    <div class="stock-errors-row">
+      <p id="publish-stock250-error" class="field-error" role="status"></p>
+      <p id="publish-stock500-error" class="field-error" role="status"></p>
+      <p id="publish-stock-error" class="field-error" role="status"></p>
+    </div>
+
     <fieldset><legend>Product tags</legend>
       <label class="toggle-row"><span>Regular</span><input type="checkbox" role="switch" name="tags" value="Regular"><span class="toggle-track" aria-hidden="true"></span><span class="toggle-state" aria-hidden="true"></span></label>
       <label class="toggle-row"><span>Today’s special</span><input type="checkbox" role="switch" name="tags" value="Today's special"><span class="toggle-track" aria-hidden="true"></span><span class="toggle-state" aria-hidden="true"></span></label>
@@ -108,13 +143,89 @@
     </label>
     <p id="publish-discount-error" class="field-error" role="status"></p>
     <p id="publish-general-error" class="field-error" role="status"></p>
-    <button id="publish-action">Publish vegetable</button> <button type="button" id="cancel-edit" hidden>Cancel edit</button>
+    <div class="publish-form-actions">
+      <button id="publish-action" class="btn-publish-main">Publish vegetable</button>
+      <div class="publish-edit-subactions">
+        <button type="button" id="cancel-edit" class="btn-cancel-edit" hidden>✕ Cancel edit</button>
+        <button type="button" id="delete-edit" class="btn-delete-edit" hidden>🗑️ Delete vegetable</button>
+      </div>
+    </div>
   </form>
   <h3>Published vegetables</h3>
   <p id="catalog-mode" hidden>Demo catalog · sample prices and stock</p>
   <div class="grid" id="products"></div>
 </section>
-<section id="bookings" class="panel" hidden><h2>Bookings</h2><p id="booking-sync" role="status"></p><section><h3>Pending</h3><div id="pending-orders"></div></section><section><h3>Accepted</h3><div id="accepted-orders"></div></section><section><h3>Delivered</h3><div id="delivered-orders"></div></section><section><h3>Other bookings</h3><div id="orders"></div></section></section>
+<section id="bookings" class="panel bookings-page" hidden>
+  <div class="bookings-page-header">
+    <div>
+      <h2>Customer Bookings</h2>
+      <p class="bookings-subtitle">Review orders, navigate via Google Maps &amp; manage doorstep deliveries</p>
+    </div>
+    <p id="booking-sync" class="sync-pill" role="status"></p>
+  </div>
+
+  <nav class="booking-tabs" role="tablist" aria-label="Order status filters">
+    <button type="button" class="booking-tab is-active" role="tab" id="tab-pending" data-tab="pending" aria-selected="true" aria-controls="pane-pending">
+      <div class="tab-top-row">
+        <span class="tab-icon">⏳</span>
+        <span class="tab-badge badge-pending-count" id="badge-pending-count">0</span>
+      </div>
+      <span class="tab-title">Pending</span>
+    </button>
+    <button type="button" class="booking-tab" role="tab" id="tab-accepted" data-tab="accepted" aria-selected="false" aria-controls="pane-accepted">
+      <div class="tab-top-row">
+        <span class="tab-icon">🚚</span>
+        <span class="tab-badge badge-accepted-count" id="badge-accepted-count">0</span>
+      </div>
+      <span class="tab-title">To Deliver</span>
+    </button>
+    <button type="button" class="booking-tab" role="tab" id="tab-delivered" data-tab="delivered" aria-selected="false" aria-controls="pane-delivered">
+      <div class="tab-top-row">
+        <span class="tab-icon">✓</span>
+        <span class="tab-badge badge-delivered-count" id="badge-delivered-count">0</span>
+      </div>
+      <span class="tab-title">Delivered</span>
+    </button>
+    <button type="button" class="booking-tab" role="tab" id="tab-all" data-tab="all" aria-selected="false" aria-controls="pane-all" hidden>
+      <div class="tab-top-row">
+        <span class="tab-icon">📋</span>
+        <span class="tab-badge badge-all-count" id="badge-all-count">0</span>
+      </div>
+      <span class="tab-title">All</span>
+    </button>
+  </nav>
+
+  <div class="booking-panes">
+    <section class="booking-pane is-active" id="pane-pending" role="tabpanel" aria-labelledby="tab-pending">
+      <div class="pane-banner pane-banner-pending">
+        <strong>⏳ Pending Acceptance</strong> &mdash; Review items, call customer if needed, then click &ldquo;✓ Accept booking&rdquo; to prepare for delivery.
+      </div>
+      <div id="pending-orders" class="orders-list"></div>
+    </section>
+
+    <section class="booking-pane" id="pane-accepted" role="tabpanel" aria-labelledby="tab-accepted" hidden>
+      <div class="pane-banner pane-banner-accepted">
+        <strong>🚚 Ready to Deliver</strong> &mdash; Orders confirmed and packed. Click &ldquo;🗺️ Directions&rdquo; to open Google Maps navigation or &ldquo;📞 Call&rdquo; before delivery.
+      </div>
+      <div id="accepted-orders" class="orders-list"></div>
+    </section>
+
+    <section class="booking-pane" id="pane-delivered" role="tabpanel" aria-labelledby="tab-delivered" hidden>
+      <div class="pane-banner pane-banner-delivered">
+        <strong>✓ Delivered Orders</strong> &mdash; Successfully delivered customer orders and invoices.
+      </div>
+      <div id="delivered-orders" class="orders-list"></div>
+    </section>
+
+    <section class="booking-pane" id="pane-all" role="tabpanel" aria-labelledby="tab-all" hidden>
+      <div class="pane-banner">
+        <strong>📋 All Customer Bookings</strong> &mdash; Complete order history across all statuses.
+      </div>
+      <div id="all-orders" class="orders-list"></div>
+      <div id="orders" hidden></div>
+    </section>
+  </div>
+</section>
 <section id="offers" hidden>
   <h2>Offers</h2>
   <section class="panel offer-card">
@@ -167,10 +278,34 @@
     <h2>Store details</h2>
     <dl class="account-details">
       <dt>Role</dt><dd>Store admin</dd>
-      <dt>Storefront</dt><dd><a href="https://shop.manakuragayalu.workers.dev" target="_blank" rel="noopener noreferrer">shop.manakuragayalu.workers.dev</a></dd>
       <dt>Dispatch area</dt><dd>Gandhinagar, Bowenpally (20 km radius)</dd>
       <dt>Admin WhatsApp</dt><dd>+91 9398750721</dd>
     </dl>
+  </section>
+
+  <section class="panel delivery-history-panel">
+    <div class="history-head">
+      <div>
+        <h2>Delivery &amp; Daily Revenue History</h2>
+        <p class="history-subtitle">Daily summary of delivered orders and revenue collected</p>
+      </div>
+      <button type="button" id="refresh-history" class="btn-refresh-history" title="Refresh delivery history">↻ Refresh</button>
+    </div>
+
+    <div class="history-summary-cards">
+      <div class="history-card history-card-orders">
+        <span class="history-card-label">Total Delivered Orders</span>
+        <strong class="history-card-val" id="hist-total-orders">&mdash;</strong>
+      </div>
+      <div class="history-card history-card-revenue">
+        <span class="history-card-label">Total Delivered Revenue</span>
+        <strong class="history-card-val" id="hist-total-revenue">&mdash;</strong>
+      </div>
+    </div>
+
+    <div id="daily-history-list" class="daily-history-list">
+      <p class="history-loading">Loading delivery history…</p>
+    </div>
   </section>
   <button id="admin-logout" type="button" class="admin-logout-btn">Log out</button>
   <p id="logout-error" class="field-error" role="status"></p>
