@@ -116,7 +116,10 @@ button.cta-primary,
 #publish button[type=submit],
 #delivery-offer-form button,
 #coupon-form button,
-#admin-login form button,
+#admin-login form button[type=submit],
+#admin-pwd-btn,
+#admin-send-code,
+#admin-verify-btn,
 .dash-action-btn {
   background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
   color: #ffffff !important;
@@ -131,7 +134,10 @@ button.cta-primary:hover:enabled,
 #publish button[type=submit]:hover:enabled,
 #delivery-offer-form button:hover:enabled,
 #coupon-form button:hover:enabled,
-#admin-login form button:hover:enabled {
+#admin-login form button[type=submit]:hover:enabled,
+#admin-pwd-btn:hover:enabled,
+#admin-send-code:hover:enabled,
+#admin-verify-btn:hover:enabled {
   background: linear-gradient(135deg, #15803d 0%, #166534 100%);
   box-shadow: 0 5px 14px rgba(22, 163, 74, 0.32);
   transform: translateY(-1px);
@@ -769,12 +775,16 @@ nav svg {
   font-weight: 400;
 }
 
-.account-page button {
+.account-page button[type=submit],
+.account-page #admin-pwd-btn,
+.account-page #admin-send-code,
+.account-page #admin-verify-btn,
+.account-page .admin-logout-btn {
   width: 100%;
-  min-height: 48px;
+  min-height: 44px;
 }
 
-#admin-login form button {
+#admin-login form button[type=submit] {
   margin-top: .5rem;
 }
 
@@ -853,6 +863,7 @@ textarea[aria-invalid=true] {
   display: flex;
   align-items: center;
   width: 100%;
+  margin-top: .3rem;
 }
 
 .password-input-wrap input {
@@ -869,8 +880,11 @@ textarea[aria-invalid=true] {
   border: none !important;
   box-shadow: none !important;
   padding: .35rem !important;
-  min-height: auto !important;
-  width: auto !important;
+  min-height: 0 !important;
+  max-height: 36px !important;
+  height: 36px !important;
+  width: 36px !important;
+  min-width: 0 !important;
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
@@ -891,6 +905,10 @@ textarea[aria-invalid=true] {
   width: 20px;
   height: 20px;
   stroke: currentColor;
+}
+
+.btn-toggle-pwd .eye-icon[hidden] {
+  display: none !important;
 }
 
 .pwd-field-sub {

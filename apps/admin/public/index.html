@@ -337,7 +337,7 @@
       <p id="admin-pwd-error" class="field-error" role="status"></p>
       <button type="button" id="admin-forgot-pwd" class="auth-forgot-link">Forgot password?</button>
     </div>
-    <button id="admin-pwd-btn">Sign in with password</button>
+    <button id="admin-pwd-btn" type="submit">Sign in with password</button>
     <p id="admin-pwd-status" class="field-status" role="status"></p>
     <div class="auth-toggle-row">
       <button type="button" id="admin-switch-otp" class="auth-text-link">First-time admin setup? Verify with email code</button>
@@ -350,7 +350,7 @@
         <input name="email" type="email" autocomplete="email" autocapitalize="none" required aria-describedby="admin-email-error">
       </label>
       <p id="admin-email-error" class="field-error" role="status"></p>
-      <button id="admin-send-code">Send verification code</button>
+      <button id="admin-send-code" type="submit">Send verification code</button>
     </form>
     <p id="admin-code-status" role="status"></p>
     <form id="admin-verify" novalidate hidden>
@@ -374,7 +374,7 @@
         </div>
       </label>
       <p id="admin-new-pwd-error" class="field-error" role="status"></p>
-      <button id="admin-verify-btn">Verify and set password</button>
+      <button id="admin-verify-btn" type="submit">Verify and set password</button>
     </form>
     <div class="auth-toggle-row">
       <button type="button" id="admin-switch-pwd" class="auth-text-link">← Back to password sign in</button>
